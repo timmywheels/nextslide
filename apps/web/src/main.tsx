@@ -5,6 +5,7 @@ import './index.css'
 import LandingPage from './pages/LandingPage'
 import PresenterPage from './pages/PresenterPage'
 import SpeakerPage from './pages/SpeakerPage'
+import PrivacyPage from './pages/PrivacyPage'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')
@@ -16,6 +17,7 @@ ReactDOM.createRoot(root).render(
         <Route path="/" element={<LandingPage />} />
         <Route path="/presenter/:code" element={<PresenterPage />} />
         <Route path="/s/:code" element={<SpeakerPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
