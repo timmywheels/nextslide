@@ -1,10 +1,27 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { resolve } from 'path'
+import { readFileSync, writeFileSync } from 'fs'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '')
+  return {
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Inject the deterministic extension key into dist/manifest.json for dev
+    // builds only. Production builds stay clean so the CWS accepts the zip.
+    ...(env['VITE_MANIFEST_KEY'] ? [{
+      name: 'inject-manifest-key',
+      closeBundle() {
+        const path = resolve(__dirname, 'dist/manifest.json')
+        const manifest = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+        manifest['key'] = env['VITE_MANIFEST_KEY']
+        writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+      },
+    }] : []),
+  ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -28,4 +45,5 @@ export default defineConfig({
   },
   // Copy public/ (manifest.json, icons) into dist
   publicDir: 'public',
+  }
 })
