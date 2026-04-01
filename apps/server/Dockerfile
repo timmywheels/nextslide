@@ -6,10 +6,11 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy workspace manifests
+# Copy workspace manifests first (layer-cache friendly)
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/types/package.json ./packages/types/package.json
 COPY apps/server/package.json ./apps/server/package.json
+COPY apps/web/package.json ./apps/web/package.json
 
 # Install all deps (including dev for build)
 RUN pnpm install --frozen-lockfile
@@ -17,9 +18,11 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY packages/types ./packages/types
 COPY apps/server ./apps/server
+COPY apps/web ./apps/web
 
-# Build types then server
+# Build types → web → server
 RUN pnpm --filter @nextslide/types build
+RUN pnpm --filter @nextslide/web build
 RUN pnpm --filter @nextslide/server build
 
 # ---- Runtime stage ----
@@ -40,6 +43,7 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built artifacts
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
 
 ENV NODE_ENV=production
 ENV PORT=3001
