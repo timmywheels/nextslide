@@ -1,0 +1,26 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "4545:4545"
+    environment:
+      PORT: "4545"
+      BASE_URL: "${BASE_URL:-http://localhost:5757}"
+      SESSION_TTL_HOURS: "${SESSION_TTL_HOURS:-4}"
+      MAX_SESSIONS: "${MAX_SESSIONS:-1000}"
+      CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost:5757}"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "5757:80"
+    environment:
+      RELAY_URL: "${RELAY_URL:-ws://localhost:4545}"
+    depends_on:
+      - server
+    restart: unless-stopped

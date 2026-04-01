@@ -1,0 +1,34 @@
+{
+  "name": "@nextslide/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nextslide/types": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-qr-code": "^2.0.18",
+    "react-router-dom": "^7.13.2",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}

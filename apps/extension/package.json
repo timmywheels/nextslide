@@ -1,0 +1,20 @@
+{
+  "name": "@nextslide/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nextslide/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}

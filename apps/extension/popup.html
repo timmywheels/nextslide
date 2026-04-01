@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>nextslide</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        width: 300px;
+        min-height: 120px;
+        margin: 0;
+        padding: 16px;
+        background: #0a0a0a;
+        color: #fafafa;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 14px;
+      }
+
+      .logo {
+        font-family: monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #52525b;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+
+      /* Inputs */
+      .input {
+        width: 100%;
+        padding: 9px 12px;
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 8px;
+        color: #fafafa;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .input::placeholder { color: #52525b; }
+      .input:focus { border-color: #3f3f46; }
+      .input.code-input {
+        font-family: monospace;
+        font-size: 20px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        text-align: center;
+        padding: 10px;
+      }
+
+      /* Buttons */
+      .btn {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.1s;
+      }
+      .btn:hover { opacity: 0.9; }
+      .btn:active { opacity: 0.75; }
+      .btn-green { background: #22c55e; color: #000; }
+      .btn-blue  { background: #2563eb; color: #fff; }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid #3f3f46;
+        color: #a1a1aa;
+        font-size: 13px;
+        padding: 7px 10px;
+      }
+      .btn-ghost:hover { border-color: #ef4444; color: #ef4444; }
+
+      /* Layout helpers */
+      .stack { display: flex; flex-direction: column; gap: 8px; }
+      .row   { display: flex; gap: 8px; align-items: stretch; }
+      .row .input { flex: 1; }
+
+      /* Divider */
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #3f3f46;
+        font-size: 11px;
+        margin: 4px 0;
+      }
+      .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #27272a;
+      }
+
+      /* Connected state */
+      .session-code {
+        font-family: monospace;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: #fff;
+        text-align: center;
+        margin: 4px 0 8px;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .live-label {
+        font-size: 11px;
+        color: #22c55e;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .participant-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 120px;
+        overflow-y: auto;
+      }
+      .participant {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #d4d4d8;
+      }
+      .participant-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .audience-section {
+        background: #111;
+        border: 1px solid #27272a;
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .section-label {
+        font-size: 10px;
+        color: #52525b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .empty-audience {
+        font-size: 12px;
+        color: #3f3f46;
+        font-style: italic;
+      }
+
+      /* Status */
+      #status {
+        font-size: 12px;
+        color: #71717a;
+        min-height: 16px;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo">nextslide</div>
+    <div id="app"></div>
+    <script type="module" src="./src/popup.ts"></script>
+  </body>
+</html>

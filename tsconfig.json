@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "noEmit": true
+  },
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./apps/server" },
+    { "path": "./apps/web" },
+    { "path": "./apps/extension" }
+  ],
+  "files": []
+}

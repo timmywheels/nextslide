@@ -1,0 +1,25 @@
+{
+  "name": "@nextslide/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@fastify/websocket": "^11.0.1",
+    "@nextslide/types": "workspace:*",
+    "fastify": "^5.2.1",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "tsx": "^4.15.6",
+    "typescript": "^5.4.5"
+  }
+}
