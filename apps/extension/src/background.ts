@@ -158,5 +158,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ ok: true })
     return true
   }
+  // Manager page forwards: speaker_status, cue, timer_sync
+  if (message.type === 'speaker_status' || message.type === 'cue' || message.type === 'timer_sync') {
+    if (socket && socket.readyState === socket.OPEN) {
+      socket.send(JSON.stringify(message))
+    }
+    sendResponse({ ok: true })
+    return true
+  }
   return false
 })

@@ -135,7 +135,7 @@ const wsPlugin: FastifyPluginAsync = async (fastify) => {
           }
 
           const id = generateId()
-          session.speakers.set(id, { id, name, socket, clientId: incomingClientId })
+          session.speakers.set(id, { id, name, socket, clientId: incomingClientId, enabled: true })
           if (incomingClientId) session.clientIndex.set(incomingClientId, id)
           state.role = 'speaker'
           state.participantId = id
@@ -169,12 +169,56 @@ const wsPlugin: FastifyPluginAsync = async (fastify) => {
 
       if (message.type === 'command') {
         if (state.role !== 'speaker') return
+        // Silently drop commands from disabled speakers
+        if (state.participantId) {
+          const speaker = state.session.speakers.get(state.participantId)
+          if (speaker && !speaker.enabled) return
+        }
         const presenter = state.session.presenterSocket
         if (!presenter || presenter.readyState !== presenter.OPEN) {
           send(socket, { type: 'error', message: 'no_presenter' })
           return
         }
         send(presenter, { type: 'command', command: message.command })
+        return
+      }
+
+      if (message.type === 'speaker_status') {
+        if (state.role !== 'presenter') return
+        const speaker = state.session.speakers.get(message.targetId)
+        if (!speaker) return
+        speaker.enabled = message.enabled
+        send(speaker.socket, { type: 'your_status', enabled: message.enabled })
+        broadcastToSession(state.session, {
+          type: 'participant_update',
+          count: getParticipantCount(state.session),
+          participants: getParticipants(state.session),
+        })
+        return
+      }
+
+      if (message.type === 'cue') {
+        if (state.role !== 'presenter') return
+        const speaker = state.session.speakers.get(message.targetId)
+        if (speaker) send(speaker.socket, { type: 'cue', cueType: message.cueType })
+        return
+      }
+
+      if (message.type === 'timer_sync') {
+        if (state.role !== 'presenter') return
+        if (message.timerType === 'global') {
+          broadcastToSession(state.session, {
+            type: 'timer_sync', timerType: 'global',
+            action: message.action, remainingMs: message.remainingMs,
+          })
+        } else {
+          const speaker = state.session.speakers.get(message.targetId)
+          if (speaker) send(speaker.socket, {
+            type: 'timer_sync', timerType: 'speaker',
+            action: message.action, remainingMs: message.remainingMs,
+          })
+        }
+        return
       }
     })
 

@@ -3,11 +3,20 @@ import type { ClientMessage, Participant, ServerMessage, SlideCommand } from '@n
 
 type Role = 'presenter' | 'speaker'
 
+export interface TimerSync {
+  action: 'start' | 'pause' | 'reset'
+  remainingMs: number
+  syncedAt: number  // Date.now() when received — used to account for elapsed time
+}
+
 interface UseSessionResult {
   connected: boolean
   participantCount: number
   participants: Participant[]
   presenterConnected: boolean
+  speakerEnabled: boolean
+  globalTimerSync: TimerSync | null
+  speakerTimerSync: TimerSync | null
   sendCommand: (command: SlideCommand) => void
 }
 
@@ -26,14 +35,24 @@ function getOrCreateClientId(): string {
   return id
 }
 
-export function useSession(code: string, role: Role, name?: string): UseSessionResult {
+export function useSession(
+  code: string,
+  role: Role,
+  name?: string,
+  onCue?: (cueType: 'up' | 'warning') => void,
+): UseSessionResult {
   const [connected, setConnected] = useState(false)
   const [participantCount, setParticipantCount] = useState(0)
   const [participants, setParticipants] = useState<Participant[]>([])
   const [presenterConnected, setPresenterConnected] = useState(false)
+  const [speakerEnabled, setSpeakerEnabled] = useState(true)
+  const [globalTimerSync, setGlobalTimerSync] = useState<TimerSync | null>(null)
+  const [speakerTimerSync, setSpeakerTimerSync] = useState<TimerSync | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const unmountedRef = useRef(false)
+  const onCueRef = useRef(onCue)
+  onCueRef.current = onCue
 
   const send = useCallback((msg: ClientMessage): void => {
     const ws = wsRef.current
@@ -78,8 +97,22 @@ export function useSession(code: string, role: Role, name?: string): UseSessionR
           setParticipants(msg.participants)
           if (role === 'speaker') {
             setPresenterConnected(msg.participants.some(p => p.role === 'presenter'))
+            // Sync enabled state from participant list on reconnect
+            const self = msg.participants.find(p => p.role === 'speaker' && p.name === name)
+            if (self?.enabled !== undefined) setSpeakerEnabled(self.enabled)
           } else {
             setPresenterConnected(true)
+          }
+        } else if (msg.type === 'your_status') {
+          setSpeakerEnabled(msg.enabled)
+        } else if (msg.type === 'cue') {
+          onCueRef.current?.(msg.cueType)
+        } else if (msg.type === 'timer_sync') {
+          const sync: TimerSync = { action: msg.action, remainingMs: msg.remainingMs, syncedAt: Date.now() }
+          if (msg.timerType === 'global') {
+            setGlobalTimerSync(sync)
+          } else {
+            setSpeakerTimerSync(sync)
           }
         } else if (msg.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong' } satisfies ClientMessage))
@@ -89,7 +122,7 @@ export function useSession(code: string, role: Role, name?: string): UseSessionR
       }
 
       ws.onclose = () => {
-        if (wsRef.current !== ws) return // stale socket (e.g. StrictMode remount) — ignore
+        if (wsRef.current !== ws) return
         setConnected(false)
         wsRef.current = null
         if (!unmountedRef.current) {
@@ -106,10 +139,10 @@ export function useSession(code: string, role: Role, name?: string): UseSessionR
       unmountedRef.current = true
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
       const ws = wsRef.current
-      wsRef.current = null // null first so onclose handler ignores this socket
+      wsRef.current = null
       if (ws) ws.close()
     }
   }, [code, role, name])
 
-  return { connected, participantCount, participants, presenterConnected, sendCommand }
+  return { connected, participantCount, participants, presenterConnected, speakerEnabled, globalTimerSync, speakerTimerSync, sendCommand }
 }

@@ -35,6 +35,20 @@ function ConnectedView({ state }: ConnectedViewProps): React.ReactElement {
     })
   }
 
+  function openManager(): void {
+    const managerUrl = chrome.runtime.getURL('manager.html')
+    chrome.tabs.query({ url: managerUrl }, (tabs) => {
+      if (tabs.length > 0 && tabs[0].id !== undefined) {
+        void chrome.tabs.update(tabs[0].id, { active: true })
+        if (tabs[0].windowId !== undefined) {
+          void chrome.windows.update(tabs[0].windowId, { focused: true })
+        }
+      } else {
+        void chrome.tabs.create({ url: managerUrl })
+      }
+    })
+  }
+
   function endSession(): void {
     chrome.runtime.sendMessage({ type: 'disconnect' })
   }
@@ -85,6 +99,16 @@ function ConnectedView({ state }: ConnectedViewProps): React.ReactElement {
           </div>
         )}
       </div>
+
+      {/* Open manager */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={openManager}
+        className="w-full border border-[#3f3f46] text-[#a1a1aa] text-xs hover:border-white hover:text-white"
+      >
+        Open manager →
+      </Button>
 
       {/* End session */}
       <Button

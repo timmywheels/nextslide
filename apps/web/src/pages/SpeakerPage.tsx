@@ -1,12 +1,73 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useSession } from '../hooks/useSession'
+import { useSession, type TimerSync } from '../hooks/useSession'
 import { getSession } from '../lib/api'
 
 type SessionState = 'loading' | 'not_found' | 'enter_name' | 'ready'
 
 const FLASH_DURATION_MS = 150
 const NAME_KEY = 'nextslide_name'
+
+// ---------------------------------------------------------------------------
+// Local clock
+// ---------------------------------------------------------------------------
+
+function LocalTime(): React.ReactElement {
+  const [time, setTime] = useState(() => new Date().toLocaleTimeString())
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return <span className="font-mono text-xs text-[#52525b]">{time}</span>
+}
+
+// ---------------------------------------------------------------------------
+// Timer display (receives a sync event and counts down locally)
+// ---------------------------------------------------------------------------
+
+interface TimerDisplayProps {
+  sync: TimerSync
+  prominent?: boolean
+}
+
+function TimerDisplay({ sync, prominent = false }: TimerDisplayProps): React.ReactElement | null {
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    if (sync.action !== 'start') return
+    const id = setInterval(() => setTick(n => n + 1), 500)
+    return () => clearInterval(id)
+  }, [sync.action, sync.syncedAt])
+
+  if (sync.action === 'reset') return null
+
+  const elapsed = sync.action === 'start' ? Date.now() - sync.syncedAt : 0
+  const remaining = Math.max(0, sync.remainingMs - elapsed)
+  const totalSec = Math.ceil(remaining / 1000)
+  const display = `${Math.floor(totalSec / 60)}:${String(totalSec % 60).padStart(2, '0')}`
+  const isWarning = remaining > 0 && remaining < 60_000
+  const isExpired = remaining === 0
+
+  const colorClass = isExpired ? 'text-red-500' : isWarning ? 'text-amber-400' : prominent ? 'text-white' : 'text-[#52525b]'
+
+  if (prominent) {
+    return (
+      <div className={`text-center font-mono font-bold text-4xl tabular-nums ${colorClass}`}>
+        {display}
+      </div>
+    )
+  }
+
+  return (
+    <span className={`font-mono text-xs font-bold tabular-nums ${colorClass}`}>
+      {display}
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
 export default function SpeakerPage(): React.ReactElement {
   const { code } = useParams<{ code: string }>()
@@ -17,13 +78,25 @@ export default function SpeakerPage(): React.ReactElement {
   const [confirmedName, setConfirmedName] = useState<string | undefined>(undefined)
   const [nextFlash, setNextFlash] = useState(false)
   const [prevFlash, setPrevFlash] = useState(false)
+  const [activeCue, setActiveCue] = useState<'up' | 'warning' | null>(null)
   const nextFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { connected, participants, presenterConnected, sendCommand } = useSession(
+  const handleCue = useCallback((cueType: 'up' | 'warning'): void => {
+    if (cueTimerRef.current) clearTimeout(cueTimerRef.current)
+    setActiveCue(cueType)
+    if (navigator.vibrate) {
+      navigator.vibrate(cueType === 'up' ? [200, 100, 200] : [100])
+    }
+    cueTimerRef.current = setTimeout(() => setActiveCue(null), cueType === 'up' ? 3000 : 5000)
+  }, [])
+
+  const { connected, participants, presenterConnected, speakerEnabled, globalTimerSync, speakerTimerSync, sendCommand } = useSession(
     sessionCode,
     'speaker',
     confirmedName,
+    handleCue,
   )
 
   useEffect(() => {
@@ -33,7 +106,6 @@ export default function SpeakerPage(): React.ReactElement {
       .catch(() => setSessionState('not_found'))
   }, [sessionCode])
 
-  // Pre-fill saved name
   useEffect(() => {
     const saved = localStorage.getItem(NAME_KEY)
     if (saved) setName(saved)
@@ -65,6 +137,7 @@ export default function SpeakerPage(): React.ReactElement {
     return () => {
       if (nextFlashTimer.current) clearTimeout(nextFlashTimer.current)
       if (prevFlashTimer.current) clearTimeout(prevFlashTimer.current)
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current)
     }
   }, [])
 
@@ -123,21 +196,41 @@ export default function SpeakerPage(): React.ReactElement {
     )
   }
 
+  const presenter = participants.find(p => p.role === 'presenter')
+
   return (
     <div className="min-h-screen flex flex-col" style={base}>
+      {/* Ping overlay */}
+      {activeCue && (
+        <div
+          className={`fixed inset-0 flex items-center justify-center z-50 cursor-pointer ${
+            activeCue === 'up' ? 'bg-[#14532d]/95' : 'bg-amber-950/95'
+          }`}
+          onClick={() => setActiveCue(null)}
+        >
+          <div className="text-center px-8">
+            <div className={`text-5xl font-bold mb-3 ${activeCue === 'up' ? 'text-[#22c55e]' : 'text-amber-400'}`}>
+              {activeCue === 'up' ? "You're up!" : 'Heads up!'}
+            </div>
+            <div className="text-sm text-[#71717a]">Tap to dismiss</div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
-        {(() => {
-          const presenter = participants.find(p => p.role === 'presenter')
-          return presenter
-            ? <span className="font-mono text-xs text-[#22c55e]">{presenter.name} · presenting</span>
-            : <span className="font-mono text-xs text-[#52525b]">nextslide.app</span>
-        })()}
-        <span className="font-mono text-xs text-[#52525b] tracking-widest uppercase">{sessionCode}</span>
-        <span className="font-mono text-xs text-[#52525b]">
-          {participants.filter(p => p.role === 'speaker').length} {participants.filter(p => p.role === 'speaker').length === 1 ? 'speaker' : 'speakers'}
-        </span>
+        {presenter
+          ? <span className="font-mono text-xs text-[#22c55e]">{presenter.name} · presenting</span>
+          : <span className="font-mono text-xs text-[#52525b]">nextslide.app</span>
+        }
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs text-[#52525b] tracking-widest uppercase">{sessionCode}</span>
+          {globalTimerSync && <TimerDisplay sync={globalTimerSync} />}
+        </div>
+        <LocalTime />
       </header>
 
+      {/* Speaker pills */}
       {participants.filter(p => p.role === 'speaker').length > 0 && (
         <div className="px-4 py-2 flex flex-wrap gap-1">
           {participants.filter(p => p.role === 'speaker').map(p => (
@@ -145,6 +238,15 @@ export default function SpeakerPage(): React.ReactElement {
               {p.name}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Status banners */}
+      {!speakerEnabled && connected && (
+        <div className="flex items-center justify-center px-6 py-2">
+          <div className="rounded-lg border border-[#27272a] bg-[#1a1a1a] px-4 py-2 text-xs text-[#71717a] text-center">
+            Waiting for your turn…
+          </div>
         </div>
       )}
 
@@ -156,10 +258,18 @@ export default function SpeakerPage(): React.ReactElement {
         </div>
       )}
 
+      {/* Slot timer (prominent, shown when active) */}
+      {speakerTimerSync && speakerTimerSync.action !== 'reset' && (
+        <div className="px-6 pt-4">
+          <TimerDisplay sync={speakerTimerSync} prominent />
+        </div>
+      )}
+
+      {/* Controls */}
       <main className="flex-1 flex flex-col gap-4 p-4 pb-6">
         <button
           onPointerDown={handleNext}
-          disabled={!connected}
+          disabled={!connected || !speakerEnabled}
           aria-label="Next slide"
           className="flex-[2] min-h-[80px] rounded-2xl font-bold text-3xl text-black disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
           style={{
@@ -171,7 +281,7 @@ export default function SpeakerPage(): React.ReactElement {
         </button>
         <button
           onPointerDown={handlePrev}
-          disabled={!connected}
+          disabled={!connected || !speakerEnabled}
           aria-label="Previous slide"
           className="flex-1 min-h-[80px] rounded-2xl font-bold text-2xl text-white disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
           style={{

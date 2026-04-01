@@ -16,6 +16,7 @@ export type Speaker = {
   name: string
   socket: WebSocket
   clientId?: string
+  enabled: boolean
 }
 
 export type Session = {
@@ -91,7 +92,7 @@ export function getParticipants(session: Session): Participant[] {
     result.push({ id: 'presenter', name: session.presenterName, role: 'presenter' })
   }
   for (const member of session.speakers.values()) {
-    result.push({ id: member.id, name: member.name, role: 'speaker' })
+    result.push({ id: member.id, name: member.name, role: 'speaker', enabled: member.enabled })
   }
   return result
 }
