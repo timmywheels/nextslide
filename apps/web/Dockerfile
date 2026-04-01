@@ -14,8 +14,8 @@ RUN pnpm install --frozen-lockfile
 COPY packages/types ./packages/types
 COPY apps/web ./apps/web
 
-ARG RELAY_URL=wss://nextslide.app
-ENV VITE_RELAY_URL=$RELAY_URL
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 RUN pnpm --filter @nextslide/types build
 RUN pnpm --filter @nextslide/web build

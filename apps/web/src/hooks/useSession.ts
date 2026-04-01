@@ -21,6 +21,10 @@ interface UseSessionResult {
 }
 
 function getWsUrl(code: string): string {
+  const apiUrl = import.meta.env.VITE_API_URL as string | undefined
+  if (apiUrl) {
+    return `${apiUrl.replace(/^http/, 'ws')}/ws/${code}`
+  }
   const { protocol, host } = window.location
   const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:'
   return `${wsProtocol}//${host}/ws/${code}`
