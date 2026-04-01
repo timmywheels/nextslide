@@ -42,6 +42,11 @@ function GridBackground(): React.ReactElement {
 export default function LandingPage(): React.ReactElement {
   return (
     <div className="relative min-h-screen bg-white text-[#09090b]">
+      {/* Acquisition banner */}
+      <div className="relative z-10 bg-[#09090b] text-white text-xs text-center py-2 px-4">
+        Hey Google — this should just be a native Slides feature.
+      </div>
+
       <GridBackground />
 
       {/* Header */}
