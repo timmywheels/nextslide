@@ -1,6 +1,6 @@
 import type { ClientMessage, Participant, ServerMessage, SlideCommand } from '@nextslide/types'
 
-const DEFAULT_RELAY_URL = 'ws://localhost:4545'
+const DEFAULT_RELAY_URL = import.meta.env.VITE_RELAY_URL as string ?? 'wss://nextslide.app'
 const MAX_BACKOFF_MS = 30_000
 
 // ── WebSocket state ────────────────────────────────────────────────────────

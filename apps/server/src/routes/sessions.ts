@@ -25,7 +25,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
     const body: CreateSessionResponse = {
       code: session.code,
       presenterUrl: `${BASE_URL}/presenter/${session.code}`,
-      audienceUrl: `${BASE_URL}/s/${session.code}`,
+      speakerUrl: `${BASE_URL}/s/${session.code}`,
     }
 
     return reply.code(200).send(body)

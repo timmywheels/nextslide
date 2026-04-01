@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { ClientMessage, Participant, ServerMessage, SlideCommand } from '@nextslide/types'
 
-type Role = 'presenter' | 'audience'
+type Role = 'presenter' | 'speaker'
 
 interface UseSessionResult {
   connected: boolean
@@ -61,7 +61,7 @@ export function useSession(code: string, role: Role, name?: string): UseSessionR
       ws.onopen = () => {
         if (unmountedRef.current) { ws.close(); return }
         setConnected(true)
-        const clientId = role === 'audience' ? getOrCreateClientId() : undefined
+        const clientId = role === 'speaker' ? getOrCreateClientId() : undefined
         const joinMsg: ClientMessage = { type: 'join', role, ...(name ? { name } : {}), ...(clientId ? { clientId } : {}) }
         ws.send(JSON.stringify(joinMsg))
       }
@@ -76,7 +76,7 @@ export function useSession(code: string, role: Role, name?: string): UseSessionR
           const count = msg.type === 'joined' ? msg.participantCount : msg.count
           setParticipantCount(count)
           setParticipants(msg.participants)
-          if (role === 'audience') {
+          if (role === 'speaker') {
             setPresenterConnected(msg.participants.some(p => p.role === 'presenter'))
           } else {
             setPresenterConnected(true)

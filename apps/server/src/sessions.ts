@@ -11,7 +11,7 @@ const MAX_SESSIONS = Number(process.env['MAX_SESSIONS'] ?? 1000)
 const SESSION_TTL_MS = SESSION_TTL_HOURS * 60 * 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 
-export type AudienceMember = {
+export type Speaker = {
   id: string
   name: string
   socket: WebSocket
@@ -22,7 +22,7 @@ export type Session = {
   code: string
   presenterSocket: WebSocket | null
   presenterName: string
-  audienceMembers: Map<string, AudienceMember> // id → member
+  speakers: Map<string, Speaker>               // id → speaker
   clientIndex: Map<string, string>             // clientId → participantId
   lastActivityAt: number
 }
@@ -43,7 +43,7 @@ export function createSession(): Session {
     code,
     presenterSocket: null,
     presenterName: 'Presenter',
-    audienceMembers: new Map(),
+    speakers: new Map(),
     clientIndex: new Map(),
     lastActivityAt: Date.now(),
   }
@@ -68,7 +68,7 @@ export function deleteSession(code: string): void {
     ps.close(1000, closePayload)
   }
 
-  for (const member of session.audienceMembers.values()) {
+  for (const member of session.speakers.values()) {
     if (member.socket.readyState === member.socket.OPEN) {
       member.socket.close(1000, closePayload)
     }
@@ -82,7 +82,7 @@ export function touchSession(session: Session): void {
 }
 
 export function getParticipantCount(session: Session): number {
-  return (session.presenterSocket ? 1 : 0) + session.audienceMembers.size
+  return (session.presenterSocket ? 1 : 0) + session.speakers.size
 }
 
 export function getParticipants(session: Session): Participant[] {
@@ -90,8 +90,8 @@ export function getParticipants(session: Session): Participant[] {
   if (session.presenterSocket) {
     result.push({ id: 'presenter', name: session.presenterName, role: 'presenter' })
   }
-  for (const member of session.audienceMembers.values()) {
-    result.push({ id: member.id, name: member.name, role: 'audience' })
+  for (const member of session.speakers.values()) {
+    result.push({ id: member.id, name: member.name, role: 'speaker' })
   }
   return result
 }
@@ -104,7 +104,7 @@ export function broadcastToSession(session: Session, message: ServerMessage): vo
     ps.send(payload)
   }
 
-  for (const member of session.audienceMembers.values()) {
+  for (const member of session.speakers.values()) {
     if (member.socket.readyState === member.socket.OPEN) {
       member.socket.send(payload)
     }

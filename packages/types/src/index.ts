@@ -3,11 +3,11 @@ export type SlideCommand = 'next' | 'prev' | 'first' | 'last'
 export type Participant = {
   id: string
   name: string
-  role: 'presenter' | 'audience'
+  role: 'presenter' | 'speaker'
 }
 
 export type ClientMessage =
-  | { type: 'join'; role: 'presenter' | 'audience'; name?: string; clientId?: string }
+  | { type: 'join'; role: 'presenter' | 'speaker'; name?: string; clientId?: string }
   | { type: 'command'; command: SlideCommand }
   | { type: 'pong' }
 
@@ -21,7 +21,7 @@ export type ServerMessage =
 export type CreateSessionResponse = {
   code: string
   presenterUrl: string
-  audienceUrl: string
+  speakerUrl: string
 }
 
 export type SessionStatusResponse = {

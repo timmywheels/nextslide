@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import LandingPage from './pages/LandingPage'
 import PresenterPage from './pages/PresenterPage'
-import AudiencePage from './pages/AudiencePage'
+import SpeakerPage from './pages/SpeakerPage'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')
@@ -15,7 +15,7 @@ ReactDOM.createRoot(root).render(
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/presenter/:code" element={<PresenterPage />} />
-        <Route path="/s/:code" element={<AudiencePage />} />
+        <Route path="/s/:code" element={<SpeakerPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

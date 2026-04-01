@@ -8,9 +8,9 @@ type SessionState = 'loading' | 'not_found' | 'enter_name' | 'ready'
 const FLASH_DURATION_MS = 150
 const NAME_KEY = 'nextslide_name'
 
-export default function AudiencePage(): React.ReactElement {
+export default function SpeakerPage(): React.ReactElement {
   const { code } = useParams<{ code: string }>()
-  const sessionCode = code ?? ''
+  const sessionCode = (code ?? '').toUpperCase()
 
   const [sessionState, setSessionState] = useState<SessionState>('loading')
   const [name, setName] = useState('')
@@ -22,7 +22,7 @@ export default function AudiencePage(): React.ReactElement {
 
   const { connected, participantCount, participants, presenterConnected, sendCommand } = useSession(
     sessionCode,
-    'audience',
+    'speaker',
     confirmedName,
   )
 
@@ -135,7 +135,7 @@ export default function AudiencePage(): React.ReactElement {
 
       {participants.length > 1 && (
         <div className="px-4 pb-1 flex flex-wrap gap-1">
-          {participants.filter(p => p.role === 'audience').map(p => (
+          {participants.filter(p => p.role === 'speaker').map(p => (
             <span key={p.id} className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a1a] text-[#a1a1aa] font-mono">
               {p.name}
             </span>

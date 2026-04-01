@@ -18,19 +18,21 @@ function getSavedName(): string {
 }
 
 function renderConnected(state: BackgroundState): void {
-  const audience = (state.participants ?? []).filter(p => p.role === 'audience')
+  const speakers = (state.participants ?? []).filter(p => p.role === 'speaker')
+  const code = state.code ?? ''
 
   app.innerHTML = `
     <div style="text-align:center;margin-bottom:10px">
       <div><span class="dot"></span><span class="live-label">Live</span></div>
-      <div class="session-code">${esc(state.code ?? '')}</div>
+      <div class="session-code">${esc(code)}</div>
+      <button class="btn btn-ghost" id="copy-code" style="margin-top:4px;padding:4px 12px;font-size:12px">Copy link</button>
     </div>
 
-    <div class="audience-section">
-      <div class="section-label">Audience (${audience.length})</div>
-      ${audience.length === 0
-        ? '<div class="empty-audience">No one yet — share the code!</div>'
-        : `<div class="participant-list">${audience.map(p => `
+    <div class="speaker-section">
+      <div class="section-label">Speakers (${speakers.length})</div>
+      ${speakers.length === 0
+        ? '<div class="empty-speaker">No one yet — share the link!</div>'
+        : `<div class="participant-list">${speakers.map(p => `
             <div class="participant">
               <span class="participant-dot" style="background:#3b82f6"></span>
               <span>${esc(p.name)}</span>
@@ -42,10 +44,27 @@ function renderConnected(state: BackgroundState): void {
     <div style="margin-top:10px">
       <button class="btn btn-ghost" id="disconnect">End session</button>
     </div>
+    <div style="text-align:center;margin-top:8px">
+      <a id="settings-link" href="#" style="font-size:11px;color:#3f3f46;text-decoration:none">⚙ Settings</a>
+    </div>
   `
+
+  const copyBtn = document.getElementById('copy-code')!
+  const webBase = (import.meta.env.VITE_WEB_URL as string | undefined) ?? 'https://nextslide.app'
+  copyBtn.addEventListener('click', () => {
+    const url = `${webBase}/s/${code}`
+    void navigator.clipboard.writeText(url).then(() => {
+      copyBtn.textContent = 'Copied!'
+      setTimeout(() => { copyBtn.textContent = 'Copy link' }, 2000)
+    })
+  })
 
   document.getElementById('disconnect')!.addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'disconnect' })
+  })
+  document.getElementById('settings-link')!.addEventListener('click', (e) => {
+    e.preventDefault()
+    void chrome.runtime.openOptionsPage()
   })
 }
 
@@ -67,6 +86,9 @@ function renderDisconnected(state: BackgroundState): void {
 
       <div id="status"></div>
       ${state.error ? `<div style="color:#ef4444;font-size:12px">${esc(state.error)}</div>` : ''}
+      <div style="text-align:center;margin-top:4px">
+        <a id="settings-link" href="#" style="font-size:11px;color:#3f3f46;text-decoration:none">⚙ Settings</a>
+      </div>
     </div>
   `
 
@@ -93,6 +115,11 @@ function renderDisconnected(state: BackgroundState): void {
         status.style.color = '#ef4444'
       }
     })
+  })
+
+  document.getElementById('settings-link')!.addEventListener('click', (e) => {
+    e.preventDefault()
+    void chrome.runtime.openOptionsPage()
   })
 
   document.getElementById('join')!.addEventListener('click', () => {

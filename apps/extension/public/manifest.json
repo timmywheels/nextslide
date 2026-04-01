@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "nextslide",
+  "name": "nextslide.app",
   "version": "0.1.0",
   "description": "Control your Google Slides from any phone. No OAuth, no stored data.",
   "permissions": [
@@ -27,6 +27,10 @@
       "all_frames": true
     }
   ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "nextslide"

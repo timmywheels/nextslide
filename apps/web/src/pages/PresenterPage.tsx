@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/badge'
 import { deleteSession, getSession } from '../lib/api'
 import type { Participant } from '@nextslide/types'
 
-function getAudienceUrl(code: string): string {
+function getSpeakerUrl(code: string): string {
   return `${window.location.origin}/s/${code}`
 }
 
@@ -18,8 +18,8 @@ export default function PresenterPage(): React.ReactElement {
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
 
-  const sessionCode = code ?? ''
-  const audienceUrl = getAudienceUrl(sessionCode)
+  const sessionCode = (code ?? '').toUpperCase()
+  const speakerUrl = getSpeakerUrl(sessionCode)
 
   const [participantCount, setParticipantCount] = useState(0)
   const [participants, setParticipants] = useState<Participant[]>([])
@@ -39,13 +39,14 @@ export default function PresenterPage(): React.ReactElement {
 
   const handleCopyLink = useCallback(async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(audienceUrl)
+      await navigator.clipboard.writeText(speakerUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback: select a hidden input
+      // ignore
     }
-  }, [audienceUrl])
+  }, [speakerUrl])
+
 
   const handleCopyCode = useCallback(async (): Promise<void> => {
     try {
@@ -95,7 +96,7 @@ export default function PresenterPage(): React.ReactElement {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1f1f1f]">
         <a href="/" className="font-mono font-bold text-lg tracking-tight hover:text-[#a1a1aa] transition-colors">
-          nextslide
+          nextslide.app
         </a>
         <div className="flex items-center gap-3">
           <Badge variant="default">
@@ -127,7 +128,7 @@ export default function PresenterPage(): React.ReactElement {
         {/* QR code */}
         <div className="rounded-2xl bg-white p-5 shadow-2xl">
           <QRCode
-            value={audienceUrl}
+            value={speakerUrl}
             size={200}
             bgColor="#ffffff"
             fgColor="#0a0a0a"
@@ -136,19 +137,14 @@ export default function PresenterPage(): React.ReactElement {
         </div>
 
         <p className="text-sm text-[#71717a] text-center max-w-xs">
-          Audience members scan the QR code or visit the link below to control your slides
+          Speakers join from any device — phone, tablet, or laptop. No install required.
         </p>
 
-        {/* Audience URL */}
+        {/* Speaker URL */}
         <div className="w-full rounded-lg border border-[#27272a] bg-[#111111] px-4 py-3 flex items-center justify-between gap-3">
-          <span className="font-mono text-sm text-[#a1a1aa] truncate">{audienceUrl}</span>
-          <Button
-            size="sm"
-            variant={copied ? 'green' : 'outline'}
-            onClick={() => void handleCopyLink()}
-            className="shrink-0"
-          >
-            {copied ? 'Copied!' : 'Copy link'}
+          <span className="font-mono text-sm text-[#a1a1aa] truncate">{speakerUrl}</span>
+          <Button size="sm" variant={copied ? 'green' : 'outline'} onClick={() => void handleCopyLink()} className="shrink-0">
+            {copied ? 'Copied!' : 'Copy'}
           </Button>
         </div>
 

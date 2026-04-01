@@ -24,7 +24,7 @@ export default function LandingPage(): React.ReactElement {
     <div className="min-h-screen" style={{ backgroundColor: '#0a0a0a', color: '#fafafa' }}>
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1f1f1f] max-w-6xl mx-auto">
-        <span className="font-mono font-bold text-lg tracking-tight">nextslide</span>
+        <span className="font-mono font-bold text-lg tracking-tight">nextslide.app</span>
         <a
           href="#"
           className="text-sm text-[#a1a1aa] hover:text-white transition-colors"
@@ -46,7 +46,7 @@ export default function LandingPage(): React.ReactElement {
           </h1>
 
           <p className="text-lg sm:text-xl text-[#a1a1aa] max-w-2xl mb-10 leading-relaxed">
-            Audience members control your Google Slides presentation from their phone.
+            Let your speakers advance your Google Slides from their phone.
             No app install. No signup. Just share a link.
           </p>
 
@@ -85,7 +85,7 @@ export default function LandingPage(): React.ReactElement {
                 step: '1',
                 title: 'Install the extension',
                 description:
-                  'Add the nextslide Chrome extension once. It stays in the background until you need it.',
+                  'Add the nextslide.app Chrome extension once. It stays in the background until you need it.',
               },
               {
                 step: '2',
@@ -95,7 +95,7 @@ export default function LandingPage(): React.ReactElement {
               },
               {
                 step: '3',
-                title: 'Audience taps Next',
+                title: 'Speaker taps Next',
                 description:
                   'Anyone with your link can advance your slides from their phone — no install required.',
               },
@@ -118,7 +118,7 @@ export default function LandingPage(): React.ReactElement {
         <section className="border-t border-[#1f1f1f] py-16 text-center">
           <h2 className="text-xl font-semibold mb-3">Self-host in under 5 minutes</h2>
           <p className="text-[#a1a1aa] text-sm mb-6 max-w-lg mx-auto">
-            Run nextslide on your own infrastructure with a single Docker container.
+            Run nextslide.app on your own infrastructure with a single Docker container.
             No data ever leaves your environment.
           </p>
           <a

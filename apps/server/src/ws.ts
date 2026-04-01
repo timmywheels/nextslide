@@ -17,7 +17,7 @@ const MAX_MISSED_PINGS = 2
 const generateId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 type ConnectionState = {
-  role: 'presenter' | 'audience' | null
+  role: 'presenter' | 'speaker' | null
   session: Session | null
   participantId: string | null
   clientId: string | null
@@ -48,9 +48,9 @@ function removeFromSession(socket: WebSocket, state: ConnectionState): void {
 
   if (state.role === 'presenter') {
     state.session.presenterSocket = null
-  } else if (state.role === 'audience' && state.participantId) {
+  } else if (state.role === 'speaker' && state.participantId) {
     if (state.clientId) state.session.clientIndex.delete(state.clientId)
-    state.session.audienceMembers.delete(state.participantId)
+    state.session.speakers.delete(state.participantId)
   }
 
   touchSession(state.session)
@@ -97,7 +97,7 @@ const wsPlugin: FastifyPluginAsync = async (fastify) => {
           return
         }
 
-        const name = message.name?.trim() || (message.role === 'presenter' ? 'Presenter' : 'Audience')
+        const name = message.name?.trim() || (message.role === 'presenter' ? 'Presenter' : 'Speaker')
 
         if (message.role === 'presenter') {
           const existing = session.presenterSocket
@@ -123,21 +123,21 @@ const wsPlugin: FastifyPluginAsync = async (fastify) => {
           if (incomingClientId) {
             const prevId = session.clientIndex.get(incomingClientId)
             if (prevId) {
-              const prev = session.audienceMembers.get(prevId)
+              const prev = session.speakers.get(prevId)
               if (prev) {
                 const prevState = allStates.get(prev.socket)
                 if (prevState) prevState.joined = false // suppress double-broadcast on close
                 prev.socket.terminate()
-                session.audienceMembers.delete(prevId)
+                session.speakers.delete(prevId)
               }
               session.clientIndex.delete(incomingClientId)
             }
           }
 
           const id = generateId()
-          session.audienceMembers.set(id, { id, name, socket, clientId: incomingClientId })
+          session.speakers.set(id, { id, name, socket, clientId: incomingClientId })
           if (incomingClientId) session.clientIndex.set(incomingClientId, id)
-          state.role = 'audience'
+          state.role = 'speaker'
           state.participantId = id
           state.clientId = incomingClientId ?? null
         }
@@ -168,7 +168,7 @@ const wsPlugin: FastifyPluginAsync = async (fastify) => {
       }
 
       if (message.type === 'command') {
-        if (state.role !== 'audience') return
+        if (state.role !== 'speaker') return
         const presenter = state.session.presenterSocket
         if (!presenter || presenter.readyState !== presenter.OPEN) {
           send(socket, { type: 'error', message: 'no_presenter' })
