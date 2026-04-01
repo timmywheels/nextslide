@@ -115,12 +115,12 @@ export default function PresenterPage(): React.ReactElement {
           <button
             onClick={() => void handleCopyCode()}
             title="Click to copy code"
-            className="font-mono text-6xl sm:text-8xl font-bold tracking-widest text-white hover:text-[#22c55e] transition-colors cursor-pointer"
+            className="font-mono text-6xl sm:text-8xl font-bold tracking-widest text-white hover:text-primary transition-colors cursor-pointer"
           >
             {sessionCode}
           </button>
           {codeCopied && (
-            <p className="text-xs text-[#22c55e] mt-2 font-mono">Code copied!</p>
+            <p className="text-xs text-primary mt-2 font-mono">Code copied!</p>
           )}
           <p className="text-xs text-[#52525b] mt-2">Click code to copy</p>
         </div>

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useSession, type TimerSync } from '../hooks/useSession'
 import { getSession } from '../lib/api'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
 
 type SessionState = 'loading' | 'not_found' | 'enter_name'
 
 const FLASH_DURATION_MS = 150
 const NAME_KEY = 'nextslide_name'
-const base = { backgroundColor: '#0a0a0a', color: '#fafafa' }
 
 // ---------------------------------------------------------------------------
 // Local clock
@@ -148,11 +149,11 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
   const presenter = participants.find(p => p.role === 'presenter')
 
   return (
-    <div className="min-h-screen flex flex-col" style={base}>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Ping overlay */}
       {activeCue && (
         <div className={`fixed inset-0 flex items-center justify-center z-50 ${
-          activeCue === 'up' ? 'bg-[#14532d]/95' : 'bg-amber-950/95'
+          activeCue === 'up' ? 'bg-primary/15' : 'bg-amber-950/95'
         }`}>
           <button
             onClick={() => setActiveCue(null)}
@@ -162,7 +163,7 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
             ×
           </button>
           <div className="text-center px-8">
-            <div className={`text-5xl font-bold mb-3 ${activeCue === 'up' ? 'text-[#22c55e]' : 'text-amber-400'}`}>
+            <div className={`text-5xl font-bold mb-3 ${activeCue === 'up' ? 'text-primary' : 'text-amber-400'}`}>
               {activeCue === 'up' ? "You're up!" : 'Heads up!'}
             </div>
             <div className="text-xs text-white/30 tracking-wide">esc to dismiss</div>
@@ -173,7 +174,7 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
         {presenter
-          ? <span className="font-mono text-xs text-[#22c55e]">{presenter.name} · presenting</span>
+          ? <span className="font-mono text-xs text-primary">{presenter.name} · presenting</span>
           : <span className="font-mono text-xs text-[#52525b]">nextslide.app</span>
         }
         <div className="flex items-center gap-3">
@@ -218,14 +219,14 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
       )}
 
       {/* Controls */}
-      <main className="flex-1 flex flex-col gap-4 p-4 pb-6">
+      <main className="flex-1 flex flex-col gap-3 p-4 pb-6 max-w-lg mx-auto w-full">
         <button
           onPointerDown={handleNext}
           disabled={!connected || !speakerEnabled}
           aria-label="Next slide"
-          className="flex-[2] min-h-[80px] rounded-2xl font-bold text-3xl text-black disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
+          className="flex-[2] min-h-[56px] rounded-xl font-bold text-xl text-black disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
           style={{
-            backgroundColor: nextFlash ? '#16a34a' : '#22c55e',
+            backgroundColor: nextFlash ? 'oklch(0.65 0.233 130.85)' : 'var(--primary)',
             transition: `background-color ${FLASH_DURATION_MS}ms ease`,
           }}
         >
@@ -235,7 +236,7 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
           onPointerDown={handlePrev}
           disabled={!connected || !speakerEnabled}
           aria-label="Previous slide"
-          className="flex-1 min-h-[80px] rounded-2xl font-bold text-2xl text-white disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
+          className="flex-1 min-h-[44px] rounded-xl font-bold text-lg text-white disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
           style={{
             backgroundColor: prevFlash ? '#52525b' : '#27272a',
             transition: `background-color ${FLASH_DURATION_MS}ms ease`,
@@ -292,20 +293,20 @@ export default function SpeakerPage(): React.ReactElement {
 
   if (sessionState === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={base}>
-        <p className="text-[#71717a] font-mono text-sm">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <p className="text-muted-foreground font-mono text-sm">Loading…</p>
       </div>
     )
   }
 
   if (sessionState === 'not_found') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={base}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center bg-background text-foreground">
         <p className="text-2xl font-bold">Session not found</p>
-        <p className="text-[#a1a1aa] text-sm max-w-xs">
-          The session <span className="font-mono text-white">{sessionCode}</span> doesn't exist or has expired.
+        <p className="text-muted-foreground text-sm max-w-xs">
+          The session <span className="font-mono text-foreground">{sessionCode}</span> doesn't exist or has expired.
         </p>
-        <Link to="/" className="mt-4 text-sm text-[#22c55e] underline underline-offset-4 hover:text-[#16a34a] transition-colors">
+        <Link to="/" className="mt-4 text-sm text-primary underline underline-offset-4 hover:text-primary/80 transition-colors">
           Go home
         </Link>
       </div>
@@ -313,30 +314,30 @@ export default function SpeakerPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-8" style={base}>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-8 bg-background text-foreground">
       <div className="text-center">
-        <p className="font-mono text-xs text-[#52525b] uppercase tracking-widest mb-1">Joining session</p>
+        <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-1">Joining session</p>
         <p className="font-mono text-2xl font-bold tracking-widest">{sessionCode}</p>
       </div>
       <div className="w-full max-w-xs flex flex-col gap-3">
-        <input
-          type="text"
+        <Input
           placeholder="Your name"
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleJoin()}
           autoFocus
           maxLength={32}
-          className="w-full px-4 py-3 rounded-xl text-lg text-center font-medium bg-[#1a1a1a] border border-[#27272a] text-white placeholder-[#52525b] focus:outline-none focus:border-[#22c55e]"
+          className="text-lg text-center py-3"
         />
-        <button
+        <Button
+          variant="green"
+          size="lg"
           onClick={handleJoin}
           disabled={!name.trim()}
-          className="w-full py-4 rounded-xl font-bold text-xl text-black disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: '#22c55e' }}
+          className="w-full"
         >
           Join
-        </button>
+        </Button>
       </div>
     </div>
   )

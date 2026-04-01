@@ -54,8 +54,8 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: () => void 
       onClick={onChange}
       role="switch"
       aria-checked={enabled}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] ${
-        enabled ? 'bg-[#22c55e]' : 'bg-[#27272a]'
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        enabled ? 'bg-primary' : 'bg-[#27272a]'
       }`}
     >
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
@@ -223,11 +223,11 @@ function SpeakerCard({ participant, slotTimer, onSlotTimerChange, onSlotTimerSyn
       {/* Name + enable toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${enabled ? 'bg-[#22c55e]' : 'bg-[#3f3f46]'}`} />
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${enabled ? 'bg-primary' : 'bg-[#3f3f46]'}`} />
           <span className="text-lg font-semibold text-white">{participant.name}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`text-xs font-mono ${enabled ? 'text-[#22c55e]' : 'text-[#52525b]'}`}>
+          <span className={`text-xs font-mono ${enabled ? 'text-primary' : 'text-[#52525b]'}`}>
             {enabled ? 'enabled' : 'disabled'}
           </span>
           <Toggle enabled={enabled} onChange={toggleEnabled} />
@@ -239,7 +239,7 @@ function SpeakerCard({ participant, slotTimer, onSlotTimerChange, onSlotTimerSyn
         <Button
           variant="ghost" size="sm"
           onClick={() => sendCue('up')}
-          className="h-8 px-4 text-xs border border-[#166534] text-[#22c55e] hover:bg-[#14532d]"
+          className="h-8 px-4 text-xs border border-primary/40 text-primary hover:bg-primary/15"
         >
           You&apos;re up
         </Button>
@@ -352,7 +352,7 @@ function ManagerApp(): React.ReactElement {
       {/* Session header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
-          <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse" />
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
           <span className="font-mono text-3xl font-bold tracking-[0.2em] text-white">{bgState.code}</span>
           <span className="text-sm text-[#3f3f46]">
             {speakers.length} {speakers.length === 1 ? 'speaker' : 'speakers'}

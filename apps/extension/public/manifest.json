@@ -3,6 +3,7 @@
   "name": "nextslide.app",
   "version": "0.1.0",
   "description": "Control your Google Slides from any phone. No OAuth, no stored data.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzgSQ8gbv/VyXVHy7e5DMObMIJtoihPt778st4RlAR059nDNjmi5TQlIaGztETlNwt+lb40c163C6LeGnjAMyXEcb93lkhLNd5ZeA6fSqbumSyKEhDPtHov3Uw3++8lwvboSl80NZj3DEaI4WQYmLphmNEJvu8aZHm6w2OzD7BgHAFb7oSS6YgG+g+yAeZszw2ZDGJD4c6wLUTcxgkF02DMueNNPqCeG8K9siD5tYCXQwlACnX+OEYVe1ZmvK6aJMSCNKKq9rvNL7SJgf3aAuI9bbhU+BbHrh9h2QCKN/o8brMbn5ozPgTJPJaWKuL0MhIadu8gBBlcVkGv4T24gNpQIDAQAB",
   "permissions": [
     "tabs",
     "storage",
@@ -31,8 +32,18 @@
     "page": "options.html",
     "open_in_tab": false
   },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "nextslide"
+    "default_title": "nextslide",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   }
 }

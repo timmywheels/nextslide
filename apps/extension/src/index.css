@@ -1,1 +1,58 @@
 @import "tailwindcss";
+
+/* Dark (default) */
+:root {
+  --ns-bg: #0a0a0a;
+  --ns-surface: #111111;
+  --ns-border: #27272a;
+  --ns-fg: #fafafa;
+  --ns-muted: #a1a1aa;
+  --ns-subtle: #71717a;
+  --ns-faint: #52525b;
+  --ns-dimmer: #3f3f46;
+}
+
+/* Light override */
+.ns-light {
+  --ns-bg: #fafafa;
+  --ns-surface: #f4f4f5;
+  --ns-border: #e4e4e7;
+  --ns-fg: #09090b;
+  --ns-muted: #52525b;
+  --ns-subtle: #71717a;
+  --ns-faint: #a1a1aa;
+  --ns-dimmer: #d4d4d8;
+}
+
+:root {
+  --primary: oklch(0.768 0.233 130.85);
+  --primary-foreground: oklch(0.405 0.101 131.063);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.768 0.233 130.85);
+  --destructive: oklch(0.704 0.191 22.216);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-ns-bg: var(--ns-bg);
+  --color-ns-surface: var(--ns-surface);
+  --color-ns-border: var(--ns-border);
+  --color-ns-fg: var(--ns-fg);
+  --color-ns-muted: var(--ns-muted);
+  --color-ns-subtle: var(--ns-subtle);
+  --color-ns-faint: var(--ns-faint);
+  --color-ns-dimmer: var(--ns-dimmer);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --radius-lg: var(--radius);
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+}

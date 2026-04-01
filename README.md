@@ -16,23 +16,64 @@ The relay is a pure message forwarder. It holds no user data, no slide content, 
 
 ## Self-hosting
 
+### Option A — Railway (one click)
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template)
+
+Or manually:
+
+1. Fork this repo
+2. Create a new Railway project → **Deploy from GitHub repo** → select your fork
+3. Railway detects `railway.toml` and builds the single Docker image automatically
+4. Add a custom domain in **Settings → Networking → Custom Domain**
+5. Build and load the Chrome extension pointing at your domain (see [Extension](#extension) below)
+
+The server handles both the API and the web app from a single service — no separate web deployment needed.
+
+### Option B — Docker Compose (VPS / local)
+
 ```bash
-# Clone and install
-git clone https://github.com/your-org/nextslide
+git clone https://github.com/timmywheels/nextslide
 cd nextslide
 pnpm install
 
-# Start everything
+# Start server + web app
 docker compose up
 ```
 
-The relay server runs on port `4545`. The web app runs on port `5757`. Load the `apps/extension/dist` folder as an unpacked Chrome extension.
+| Service | Port | URL |
+|---------|------|-----|
+| Relay server | 4545 | `http://localhost:4545` |
+| Web app | 5757 | `http://localhost:5757` |
 
-To build the extension:
+### Configuration
+
+Environment variables for the server (set in Railway dashboard or `.env`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3001` | Port the server listens on (Railway sets this automatically) |
+| `CORS_ORIGIN` | `*` | Allowed origin for CORS. Set to your web app domain in production, e.g. `https://nextslide.app` |
+| `SESSION_TTL_HOURS` | `4` | How long inactive sessions are kept in memory |
+| `MAX_SESSIONS` | `1000` | Max concurrent sessions |
+| `LOG_LEVEL` | `info` | Fastify log level (`silent`, `info`, `debug`) |
+
+### Extension
+
+Build a production extension bundle pointed at your self-hosted domain:
 
 ```bash
+# Set your server's WebSocket URL in apps/extension/.env.production
+VITE_RELAY_URL=wss://your-domain.com
+VITE_WEB_URL=https://your-domain.com
+
+# Build
 pnpm --filter @nextslide/extension build
 ```
+
+Then in Chrome: go to `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select `apps/extension/dist`.
+
+To submit to the Chrome Web Store, zip the `dist/` folder and upload it in the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 
 ## Stack
 

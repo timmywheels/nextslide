@@ -59,7 +59,7 @@ function OptionsApp(): React.ReactElement {
           Save
         </Button>
         {saved && (
-          <div className="text-xs text-[#22c55e] text-center">Saved!</div>
+          <div className="text-xs text-primary text-center">Saved!</div>
         )}
       </div>
     </div>

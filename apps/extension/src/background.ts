@@ -16,7 +16,11 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── push state to popup ────────────────────────────────────────────────────
 
+const ICON_DEFAULT = { 16: 'icons/icon-16.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' }
+const ICON_ACTIVE  = { 16: 'icons/icon-active-16.png', 48: 'icons/icon-active-48.png', 128: 'icons/icon-active-128.png' }
+
 function pushState(error?: string): void {
+  chrome.action.setIcon({ path: connected ? ICON_ACTIVE : ICON_DEFAULT }).catch(() => {})
   chrome.runtime.sendMessage({
     connected, code: currentCode, participants, error: error ?? null,
   }).catch(() => {})
