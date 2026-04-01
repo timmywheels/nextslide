@@ -219,7 +219,7 @@ function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: strin
       )}
 
       {/* Controls */}
-      <main className="flex-1 flex flex-col gap-3 p-4 pb-6 max-w-lg mx-auto w-full">
+      <main className="flex-1 flex flex-col gap-3 p-4 pb-6">
         <button
           onPointerDown={handleNext}
           disabled={!connected || !speakerEnabled}
