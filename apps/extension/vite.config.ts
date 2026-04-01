@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -11,7 +14,7 @@ export default defineConfig({
         popup: resolve(__dirname, 'popup.html'),
         background: resolve(__dirname, 'src/background.ts'),
         content: resolve(__dirname, 'src/content.ts'),
-        options: resolve(__dirname, 'src/options.ts'),
+        options: resolve(__dirname, 'options.html'),
       },
       output: {
         entryFileNames: '[name].js',
