@@ -20,7 +20,7 @@ export default function SpeakerPage(): React.ReactElement {
   const nextFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { connected, participantCount, participants, presenterConnected, sendCommand } = useSession(
+  const { connected, participants, presenterConnected, sendCommand } = useSession(
     sessionCode,
     'speaker',
     confirmedName,
@@ -125,16 +125,21 @@ export default function SpeakerPage(): React.ReactElement {
 
   return (
     <div className="min-h-screen flex flex-col" style={base}>
-      <header className="flex items-center justify-between px-4 py-3">
-        <span className="font-mono text-xs text-[#52525b]">nextslide</span>
+      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
+        {(() => {
+          const presenter = participants.find(p => p.role === 'presenter')
+          return presenter
+            ? <span className="font-mono text-xs text-[#22c55e]">{presenter.name} · presenting</span>
+            : <span className="font-mono text-xs text-[#52525b]">nextslide.app</span>
+        })()}
         <span className="font-mono text-xs text-[#52525b] tracking-widest uppercase">{sessionCode}</span>
         <span className="font-mono text-xs text-[#52525b]">
-          {participantCount} {participantCount === 1 ? 'person' : 'people'}
+          {participants.filter(p => p.role === 'speaker').length} {participants.filter(p => p.role === 'speaker').length === 1 ? 'speaker' : 'speakers'}
         </span>
       </header>
 
-      {participants.length > 1 && (
-        <div className="px-4 pb-1 flex flex-wrap gap-1">
+      {participants.filter(p => p.role === 'speaker').length > 0 && (
+        <div className="px-4 py-2 flex flex-wrap gap-1">
           {participants.filter(p => p.role === 'speaker').map(p => (
             <span key={p.id} className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a1a] text-[#a1a1aa] font-mono">
               {p.name}
