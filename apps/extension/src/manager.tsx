@@ -6,6 +6,7 @@ import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
 
 const WEB_URL = (import.meta.env.VITE_WEB_URL as string | undefined) ?? 'https://nextslide.app'
+const TIMER_STORAGE_KEY = 'nextslide_manager_timers'
 
 interface BackgroundState {
   connected: boolean
@@ -15,18 +16,20 @@ interface BackgroundState {
 }
 
 // ---------------------------------------------------------------------------
-// Timer
+// Timer state
+// targetMs is absolute — survives tab refresh without adjustment.
 // ---------------------------------------------------------------------------
 
 interface TimerState {
-  durationMinutes: number
-  targetMs: number | null  // absolute ms when timer ends (while running)
-  snapshotMs: number       // remaining ms captured at last pause/reset
+  durationMs: number
+  targetMs: number | null
+  snapshotMs: number
   running: boolean
 }
 
-function initialTimer(minutes: number): TimerState {
-  return { durationMinutes: minutes, targetMs: null, snapshotMs: minutes * 60_000, running: false }
+function initialTimer(minutes: number, seconds = 0): TimerState {
+  const durationMs = (minutes * 60 + seconds) * 1_000
+  return { durationMs, targetMs: null, snapshotMs: durationMs, running: false }
 }
 
 function getDisplayMs(t: TimerState): number {
@@ -35,22 +38,50 @@ function getDisplayMs(t: TimerState): number {
 }
 
 function formatMs(ms: number): string {
-  const totalSeconds = Math.ceil(ms / 1000)
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+  const totalSec = Math.ceil(ms / 1000)
+  return `${Math.floor(totalSec / 60)}:${String(totalSec % 60).padStart(2, '0')}`
 }
+
+const MILESTONES = [30_000, 10_000]
+
+// ---------------------------------------------------------------------------
+// Toggle switch
+// ---------------------------------------------------------------------------
+
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: () => void }): React.ReactElement {
+  return (
+    <button
+      onClick={onChange}
+      role="switch"
+      aria-checked={enabled}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e] ${
+        enabled ? 'bg-[#22c55e]' : 'bg-[#27272a]'
+      }`}
+    >
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        enabled ? 'translate-x-6' : 'translate-x-1'
+      }`} />
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Timer component
+// ---------------------------------------------------------------------------
 
 interface TimerProps {
   timer: TimerState
   onChange: (t: TimerState) => void
   onSync?: (action: 'start' | 'pause' | 'reset', remainingMs: number) => void
+  disabled?: boolean
 }
 
-function Timer({ timer, onChange, onSync }: TimerProps): React.ReactElement {
+function Timer({ timer, onChange, onSync, disabled = false }: TimerProps): React.ReactElement {
+  const [flash, setFlash] = React.useState(false)
   const [, setTick] = React.useState(0)
   const timerRef = React.useRef(timer)
   const onChangeRef = React.useRef(onChange)
+  const prevMsRef = React.useRef(getDisplayMs(timer))
   timerRef.current = timer
   onChangeRef.current = onChange
 
@@ -60,6 +91,13 @@ function Timer({ timer, onChange, onSync }: TimerProps): React.ReactElement {
       const t = timerRef.current
       if (!t.running || t.targetMs === null) return
       const ms = Math.max(0, t.targetMs - Date.now())
+      for (const m of MILESTONES) {
+        if (prevMsRef.current > m && ms <= m) {
+          setFlash(true)
+          setTimeout(() => setFlash(false), 500)
+        }
+      }
+      prevMsRef.current = ms
       if (ms === 0) {
         onChangeRef.current({ ...t, running: false, snapshotMs: 0, targetMs: null })
       } else {
@@ -73,8 +111,17 @@ function Timer({ timer, onChange, onSync }: TimerProps): React.ReactElement {
   const isExpired = displayMs === 0 && !timer.running && timer.snapshotMs === 0
   const isWarning = displayMs > 0 && displayMs < 60_000
 
+  const durationMins = Math.floor(timer.durationMs / 60_000)
+  const durationSecs = Math.floor((timer.durationMs % 60_000) / 1_000)
+
+  function handleDurationChange(mins: number, secs: number): void {
+    const durationMs = (Math.max(0, mins) * 60 + Math.max(0, Math.min(59, secs))) * 1_000
+    onChange({ ...timer, durationMs, snapshotMs: durationMs, targetMs: null, running: false })
+  }
+
   function handleStart(): void {
     const remaining = timer.snapshotMs
+    prevMsRef.current = remaining
     const updated: TimerState = { ...timer, targetMs: Date.now() + remaining, running: true }
     onChange(updated)
     onSync?.('start', remaining)
@@ -88,66 +135,79 @@ function Timer({ timer, onChange, onSync }: TimerProps): React.ReactElement {
   }
 
   function handleReset(): void {
-    const durationMs = timer.durationMinutes * 60_000
-    const updated: TimerState = { ...timer, targetMs: null, snapshotMs: durationMs, running: false }
+    prevMsRef.current = timer.durationMs
+    const updated: TimerState = { ...timer, targetMs: null, snapshotMs: timer.durationMs, running: false }
     onChange(updated)
-    onSync?.('reset', durationMs)
+    onSync?.('reset', timer.durationMs)
   }
 
-  function handleDurationChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    const mins = Math.max(1, Math.min(999, parseInt(e.target.value) || 1))
-    onChange({ ...timer, durationMinutes: mins, snapshotMs: mins * 60_000, targetMs: null, running: false })
-  }
+  const countdownColor = disabled
+    ? 'text-[#2a2a2a]'
+    : flash ? 'text-white'
+    : isExpired ? 'text-red-500'
+    : isWarning ? 'text-amber-400'
+    : 'text-[#a1a1aa]'
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <Input
-        type="number"
-        min={1}
-        max={999}
-        value={timer.durationMinutes}
-        onChange={handleDurationChange}
-        disabled={timer.running}
-        className="w-16 text-center font-mono h-7 text-xs"
-      />
-      <span className="text-[10px] text-[#52525b]">min</span>
-      <span className={`font-mono text-base font-bold w-12 text-right tabular-nums ${
-        isExpired ? 'text-red-500' : isWarning ? 'text-amber-400' : 'text-white'
-      }`}>
+    <div className={`flex items-center gap-4 transition-opacity duration-200 ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
+      {/* Duration inputs */}
+      <div className="flex items-center gap-1.5">
+        <Input
+          type="number" min={0} max={999}
+          value={durationMins}
+          onChange={e => handleDurationChange(parseInt(e.target.value) || 0, durationSecs)}
+          disabled={timer.running || disabled}
+          className="w-14 text-center font-mono h-8 text-sm bg-[#1a1a1a]"
+        />
+        <span className="text-[#3f3f46] font-mono">:</span>
+        <Input
+          type="number" min={0} max={59}
+          value={durationSecs}
+          onChange={e => handleDurationChange(durationMins, parseInt(e.target.value) || 0)}
+          disabled={timer.running || disabled}
+          className="w-12 text-center font-mono h-8 text-sm bg-[#1a1a1a]"
+        />
+      </div>
+
+      {/* Countdown */}
+      <span className={`font-mono text-xl font-bold w-16 tabular-nums transition-colors duration-150 ${countdownColor}`}>
         {formatMs(displayMs)}
       </span>
-      {timer.running ? (
-        <Button size="sm" variant="outline" onClick={handlePause}
-          className="h-7 px-3 text-xs">
-          Pause
+
+      {/* Controls */}
+      <div className="flex items-center gap-2">
+        {timer.running ? (
+          <Button size="sm" variant="outline" onClick={handlePause} disabled={disabled} className="h-8 px-4 text-xs">
+            Pause
+          </Button>
+        ) : (
+          <Button size="sm" variant="green" onClick={handleStart}
+            disabled={disabled || isExpired || timer.snapshotMs === 0}
+            className="h-8 px-4 text-xs">
+            Start
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={handleReset} disabled={disabled}
+          className="h-8 px-3 text-xs text-[#3f3f46] hover:text-[#71717a]">
+          Reset
         </Button>
-      ) : (
-        <Button size="sm" variant="green" onClick={handleStart}
-          disabled={isExpired}
-          className="h-7 px-3 text-xs">
-          Start
-        </Button>
-      )}
-      <Button size="sm" variant="ghost" onClick={handleReset}
-        className="h-7 px-3 text-xs text-[#52525b] hover:text-white">
-        Reset
-      </Button>
+      </div>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Speaker row
+// Speaker card
 // ---------------------------------------------------------------------------
 
-interface SpeakerRowProps {
+interface SpeakerCardProps {
   participant: Participant
   slotTimer: TimerState
   onSlotTimerChange: (t: TimerState) => void
   onSlotTimerSync: (action: 'start' | 'pause' | 'reset', remainingMs: number) => void
 }
 
-function SpeakerRow({ participant, slotTimer, onSlotTimerChange, onSlotTimerSync }: SpeakerRowProps): React.ReactElement {
+function SpeakerCard({ participant, slotTimer, onSlotTimerChange, onSlotTimerSync }: SpeakerCardProps): React.ReactElement {
   const enabled = participant.enabled !== false
 
   function toggleEnabled(): void {
@@ -159,49 +219,43 @@ function SpeakerRow({ participant, slotTimer, onSlotTimerChange, onSlotTimerSync
   }
 
   return (
-    <div className="rounded-lg border border-[#27272a] bg-[#111111] px-4 py-3 flex flex-col gap-3">
-      {/* Name + controls */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${enabled ? 'bg-[#22c55e]' : 'bg-[#3f3f46]'}`} />
-          <span className="text-sm font-medium text-white truncate">{participant.name}</span>
+    <div className="rounded-xl border border-[#1f1f1f] bg-[#0f0f0f] p-5 flex flex-col gap-5">
+      {/* Name + enable toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${enabled ? 'bg-[#22c55e]' : 'bg-[#3f3f46]'}`} />
+          <span className="text-lg font-semibold text-white">{participant.name}</span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={toggleEnabled}
-            className={`h-7 px-3 text-xs border ${
-              enabled
-                ? 'border-[#22c55e]/50 text-[#22c55e] hover:bg-[#22c55e]/10'
-                : 'border-[#3f3f46] text-[#52525b] hover:border-white hover:text-white'
-            }`}
-          >
-            {enabled ? 'Enabled' : 'Disabled'}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => sendCue('up')}
-            className="h-7 px-3 text-xs border border-[#166534] text-[#22c55e] hover:bg-[#14532d]"
-          >
-            You&apos;re up
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => sendCue('warning')}
-            className="h-7 px-3 text-xs border border-[#92400e] text-amber-400 hover:bg-amber-950/40"
-          >
-            Heads up
-          </Button>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-mono ${enabled ? 'text-[#22c55e]' : 'text-[#52525b]'}`}>
+            {enabled ? 'enabled' : 'disabled'}
+          </span>
+          <Toggle enabled={enabled} onChange={toggleEnabled} />
         </div>
       </div>
 
+      {/* Ping buttons */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost" size="sm"
+          onClick={() => sendCue('up')}
+          className="h-8 px-4 text-xs border border-[#166534] text-[#22c55e] hover:bg-[#14532d]"
+        >
+          You&apos;re up
+        </Button>
+        <Button
+          variant="ghost" size="sm"
+          onClick={() => sendCue('warning')}
+          className="h-8 px-4 text-xs border border-[#92400e] text-amber-400 hover:bg-amber-950/40"
+        >
+          Heads up
+        </Button>
+      </div>
+
       {/* Slot timer */}
-      <div className="flex items-center gap-3">
-        <span className="text-[10px] uppercase tracking-wider text-[#3f3f46] w-7 shrink-0">Slot</span>
-        <Timer timer={slotTimer} onChange={onSlotTimerChange} onSync={onSlotTimerSync} />
+      <div className="flex flex-col gap-2 pt-1 border-t border-[#1a1a1a]">
+        <span className="text-[10px] uppercase tracking-widest text-[#3f3f46]">Slot timer</span>
+        <Timer timer={slotTimer} onChange={onSlotTimerChange} onSync={onSlotTimerSync} disabled={!enabled} />
       </div>
     </div>
   )
@@ -211,22 +265,35 @@ function SpeakerRow({ participant, slotTimer, onSlotTimerChange, onSlotTimerSync
 // App
 // ---------------------------------------------------------------------------
 
+interface PersistedTimers {
+  globalTimer: TimerState
+  slotTimers: Record<string, TimerState>
+}
+
 function ManagerApp(): React.ReactElement {
   const [bgState, setBgState] = React.useState<BackgroundState | null>(null)
   const [globalTimer, setGlobalTimer] = React.useState<TimerState>(() => initialTimer(60))
   const [slotTimers, setSlotTimers] = React.useState<Record<string, TimerState>>({})
   const [copied, setCopied] = React.useState(false)
+  const persistedRef = React.useRef(false)
 
   React.useEffect(() => {
     chrome.runtime.sendMessage({ type: 'getState' }, (response: BackgroundState) => {
       setBgState(response ?? { connected: false, code: null, participants: [] })
+    })
+    chrome.storage.session.get([TIMER_STORAGE_KEY], (result) => {
+      const saved = result[TIMER_STORAGE_KEY] as PersistedTimers | undefined
+      if (saved) {
+        setGlobalTimer(saved.globalTimer)
+        setSlotTimers(saved.slotTimers)
+      }
+      persistedRef.current = true
     })
     const listener = (message: BackgroundState): void => { setBgState(message) }
     chrome.runtime.onMessage.addListener(listener)
     return () => chrome.runtime.onMessage.removeListener(listener)
   }, [])
 
-  // Seed slot timers for new speakers (preserve existing timers on reconnect)
   React.useEffect(() => {
     const speakers = bgState?.participants.filter(p => p.role === 'speaker') ?? []
     if (speakers.length === 0) return
@@ -238,6 +305,11 @@ function ManagerApp(): React.ReactElement {
       return next
     })
   }, [bgState?.participants])
+
+  React.useEffect(() => {
+    if (!persistedRef.current) return
+    void chrome.storage.session.set({ [TIMER_STORAGE_KEY]: { globalTimer, slotTimers } as PersistedTimers })
+  }, [globalTimer, slotTimers])
 
   function syncGlobal(action: 'start' | 'pause' | 'reset', remainingMs: number): void {
     chrome.runtime.sendMessage({ type: 'timer_sync', timerType: 'global', action, remainingMs })
@@ -260,11 +332,7 @@ function ManagerApp(): React.ReactElement {
   }
 
   if (!bgState) {
-    return (
-      <div className="flex items-center justify-center h-40 text-[#52525b] text-sm">
-        Loading…
-      </div>
-    )
+    return <div className="flex items-center justify-center h-40 text-[#52525b] text-sm">Loading…</div>
   }
 
   if (!bgState.connected || !bgState.code) {
@@ -279,53 +347,55 @@ function ManagerApp(): React.ReactElement {
   const speakers = bgState.participants.filter(p => p.role === 'speaker')
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-[#1f1f1f]">
-        <div className="flex items-center gap-3">
-          <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
-          <span className="font-mono text-2xl font-bold tracking-[0.2em] text-white">{bgState.code}</span>
-          <span className="text-xs text-[#52525b]">{speakers.length} {speakers.length === 1 ? 'speaker' : 'speakers'}</span>
+    <div className="flex flex-col gap-8">
+
+      {/* Session header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse" />
+          <span className="font-mono text-3xl font-bold tracking-[0.2em] text-white">{bgState.code}</span>
+          <span className="text-sm text-[#3f3f46]">
+            {speakers.length} {speakers.length === 1 ? 'speaker' : 'speakers'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={copyLink}
-            className="border border-[#3f3f46] text-[#a1a1aa] text-xs hover:border-white hover:text-white">
+            className="h-9 px-4 border border-[#27272a] text-[#71717a] text-sm hover:border-[#3f3f46] hover:text-white">
             {copied ? 'Copied!' : 'Copy speaker link'}
           </Button>
           <Button variant="ghost" size="sm" onClick={endSession}
-            className="border border-[#3f3f46] text-[#a1a1aa] text-xs hover:border-red-500 hover:text-red-400">
+            className="h-9 px-4 border border-[#27272a] text-[#71717a] text-sm hover:border-red-800 hover:text-red-400">
             End session
           </Button>
         </div>
       </div>
 
-      {/* Global session timer */}
-      <div className="rounded-lg border border-[#27272a] bg-[#111111] px-4 py-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[#52525b] mb-2">
-          Session timer
-        </div>
+      {/* Session timer */}
+      <div className="rounded-xl border border-[#1f1f1f] bg-[#0f0f0f] p-5">
+        <p className="text-[10px] uppercase tracking-widest text-[#3f3f46] mb-4">Session timer</p>
         <Timer timer={globalTimer} onChange={setGlobalTimer} onSync={syncGlobal} />
       </div>
 
       {/* Speakers */}
       <div className="flex flex-col gap-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[#52525b]">
+        <p className="text-[10px] uppercase tracking-widest text-[#3f3f46]">
           Speakers ({speakers.length})
-        </div>
+        </p>
         {speakers.length === 0 ? (
-          <p className="text-sm text-[#3f3f46] italic">No speakers connected yet.</p>
+          <p className="text-sm text-[#27272a] italic py-4">No speakers connected yet.</p>
         ) : (
           speakers.map(p => (
-            <SpeakerRow
+            <SpeakerCard
               key={p.id}
               participant={p}
               slotTimer={slotTimers[p.id] ?? initialTimer(10)}
               onSlotTimerChange={t => setSlotTimers(prev => ({ ...prev, [p.id]: t }))}
-              onSlotTimerSync={(action, remainingMs) => syncSlot(p.id, action, remainingMs)}
+              onSlotTimerSync={(action, ms) => syncSlot(p.id, action, ms)}
             />
           ))
         )}
       </div>
+
     </div>
   )
 }
@@ -337,10 +407,10 @@ function ManagerApp(): React.ReactElement {
 const container = document.getElementById('root')!
 createRoot(container).render(
   <div className="min-h-screen bg-[#0a0a0a] text-white">
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <div className="font-mono text-[11px] font-bold tracking-[0.1em] text-[#52525b] uppercase mb-6">
+    <div className="max-w-3xl mx-auto px-8 py-10">
+      <p className="font-mono text-[10px] font-bold tracking-[0.15em] text-[#3f3f46] uppercase mb-8">
         nextslide.app — session manager
-      </div>
+      </p>
       <ManagerApp />
     </div>
   </div>

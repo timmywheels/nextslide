@@ -3,10 +3,11 @@ import { useParams, Link } from 'react-router-dom'
 import { useSession, type TimerSync } from '../hooks/useSession'
 import { getSession } from '../lib/api'
 
-type SessionState = 'loading' | 'not_found' | 'enter_name' | 'ready'
+type SessionState = 'loading' | 'not_found' | 'enter_name'
 
 const FLASH_DURATION_MS = 150
 const NAME_KEY = 'nextslide_name'
+const base = { backgroundColor: '#0a0a0a', color: '#fafafa' }
 
 // ---------------------------------------------------------------------------
 // Local clock
@@ -30,14 +31,30 @@ interface TimerDisplayProps {
   prominent?: boolean
 }
 
+const TIMER_MILESTONES = [30_000, 10_000]
+
 function TimerDisplay({ sync, prominent = false }: TimerDisplayProps): React.ReactElement | null {
   const [, setTick] = useState(0)
+  const [flash, setFlash] = useState(false)
+  const prevMsRef = useRef(sync.remainingMs)
 
   useEffect(() => {
     if (sync.action !== 'start') return
-    const id = setInterval(() => setTick(n => n + 1), 500)
+    prevMsRef.current = sync.remainingMs
+    const id = setInterval(() => {
+      const elapsed = Date.now() - sync.syncedAt
+      const ms = Math.max(0, sync.remainingMs - elapsed)
+      for (const m of TIMER_MILESTONES) {
+        if (prevMsRef.current > m && ms <= m) {
+          setFlash(true)
+          setTimeout(() => setFlash(false), 500)
+        }
+      }
+      prevMsRef.current = ms
+      setTick(n => n + 1)
+    }, 250)
     return () => clearInterval(id)
-  }, [sync.action, sync.syncedAt])
+  }, [sync.action, sync.syncedAt, sync.remainingMs])
 
   if (sync.action === 'reset') return null
 
@@ -48,34 +65,37 @@ function TimerDisplay({ sync, prominent = false }: TimerDisplayProps): React.Rea
   const isWarning = remaining > 0 && remaining < 60_000
   const isExpired = remaining === 0
 
-  const colorClass = isExpired ? 'text-red-500' : isWarning ? 'text-amber-400' : prominent ? 'text-white' : 'text-[#52525b]'
+  const colorClass = flash
+    ? 'text-white'
+    : isExpired
+    ? 'text-red-500'
+    : isWarning
+    ? 'text-amber-400'
+    : prominent
+    ? 'text-white'
+    : 'text-[#52525b]'
 
   if (prominent) {
     return (
-      <div className={`text-center font-mono font-bold text-4xl tabular-nums ${colorClass}`}>
+      <div className={`text-center font-mono font-bold text-4xl tabular-nums transition-colors duration-150 ${colorClass} ${flash ? 'scale-110' : ''}`}>
         {display}
       </div>
     )
   }
 
   return (
-    <span className={`font-mono text-xs font-bold tabular-nums ${colorClass}`}>
+    <span className={`font-mono text-xs font-bold tabular-nums transition-colors duration-150 ${colorClass}`}>
       {display}
     </span>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Main page
+// Active speaker view — only mounted after the user clicks Join.
+// useSession lives here so the WebSocket is never opened before that point.
 // ---------------------------------------------------------------------------
 
-export default function SpeakerPage(): React.ReactElement {
-  const { code } = useParams<{ code: string }>()
-  const sessionCode = (code ?? '').toUpperCase()
-
-  const [sessionState, setSessionState] = useState<SessionState>('loading')
-  const [name, setName] = useState('')
-  const [confirmedName, setConfirmedName] = useState<string | undefined>(undefined)
+function SpeakerActive({ sessionCode, name }: { sessionCode: string; name: string }): React.ReactElement {
   const [nextFlash, setNextFlash] = useState(false)
   const [prevFlash, setPrevFlash] = useState(false)
   const [activeCue, setActiveCue] = useState<'up' | 'warning' | null>(null)
@@ -86,38 +106,30 @@ export default function SpeakerPage(): React.ReactElement {
   const handleCue = useCallback((cueType: 'up' | 'warning'): void => {
     if (cueTimerRef.current) clearTimeout(cueTimerRef.current)
     setActiveCue(cueType)
-    if (navigator.vibrate) {
-      navigator.vibrate(cueType === 'up' ? [200, 100, 200] : [100])
-    }
+    if (navigator.vibrate) navigator.vibrate(cueType === 'up' ? [200, 100, 200] : [100])
     cueTimerRef.current = setTimeout(() => setActiveCue(null), cueType === 'up' ? 3000 : 5000)
   }, [])
 
   const { connected, participants, presenterConnected, speakerEnabled, globalTimerSync, speakerTimerSync, sendCommand } = useSession(
-    sessionCode,
-    'speaker',
-    confirmedName,
-    handleCue,
+    sessionCode, 'speaker', name, handleCue,
   )
 
+  // Esc dismisses the cue overlay
   useEffect(() => {
-    if (!sessionCode) { setSessionState('not_found'); return }
-    getSession(sessionCode)
-      .then((res) => setSessionState(res.exists ? 'enter_name' : 'not_found'))
-      .catch(() => setSessionState('not_found'))
-  }, [sessionCode])
-
-  useEffect(() => {
-    const saved = localStorage.getItem(NAME_KEY)
-    if (saved) setName(saved)
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setActiveCue(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const handleJoin = useCallback((): void => {
-    const trimmed = name.trim()
-    if (!trimmed) return
-    localStorage.setItem(NAME_KEY, trimmed)
-    setConfirmedName(trimmed)
-    setSessionState('ready')
-  }, [name])
+  useEffect(() => {
+    return () => {
+      if (nextFlashTimer.current) clearTimeout(nextFlashTimer.current)
+      if (prevFlashTimer.current) clearTimeout(prevFlashTimer.current)
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current)
+    }
+  }, [])
 
   const handleNext = useCallback((): void => {
     sendCommand('next')
@@ -133,86 +145,27 @@ export default function SpeakerPage(): React.ReactElement {
     prevFlashTimer.current = setTimeout(() => setPrevFlash(false), FLASH_DURATION_MS)
   }, [sendCommand])
 
-  useEffect(() => {
-    return () => {
-      if (nextFlashTimer.current) clearTimeout(nextFlashTimer.current)
-      if (prevFlashTimer.current) clearTimeout(prevFlashTimer.current)
-      if (cueTimerRef.current) clearTimeout(cueTimerRef.current)
-    }
-  }, [])
-
-  const base = { backgroundColor: '#0a0a0a', color: '#fafafa' }
-
-  if (sessionState === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={base}>
-        <p className="text-[#71717a] font-mono text-sm">Loading…</p>
-      </div>
-    )
-  }
-
-  if (sessionState === 'not_found') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={base}>
-        <p className="text-2xl font-bold">Session not found</p>
-        <p className="text-[#a1a1aa] text-sm max-w-xs">
-          The session <span className="font-mono text-white">{sessionCode}</span> doesn't exist or has expired.
-        </p>
-        <Link to="/" className="mt-4 text-sm text-[#22c55e] underline underline-offset-4 hover:text-[#16a34a] transition-colors">
-          Go home
-        </Link>
-      </div>
-    )
-  }
-
-  if (sessionState === 'enter_name') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-8" style={base}>
-        <div className="text-center">
-          <p className="font-mono text-xs text-[#52525b] uppercase tracking-widest mb-1">Joining session</p>
-          <p className="font-mono text-2xl font-bold tracking-widest">{sessionCode}</p>
-        </div>
-        <div className="w-full max-w-xs flex flex-col gap-3">
-          <input
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-            autoFocus
-            maxLength={32}
-            className="w-full px-4 py-3 rounded-xl text-lg text-center font-medium bg-[#1a1a1a] border border-[#27272a] text-white placeholder-[#52525b] focus:outline-none focus:border-[#22c55e]"
-          />
-          <button
-            onClick={handleJoin}
-            disabled={!name.trim()}
-            className="w-full py-4 rounded-xl font-bold text-xl text-black disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#22c55e' }}
-          >
-            Join
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   const presenter = participants.find(p => p.role === 'presenter')
 
   return (
     <div className="min-h-screen flex flex-col" style={base}>
       {/* Ping overlay */}
       {activeCue && (
-        <div
-          className={`fixed inset-0 flex items-center justify-center z-50 cursor-pointer ${
-            activeCue === 'up' ? 'bg-[#14532d]/95' : 'bg-amber-950/95'
-          }`}
-          onClick={() => setActiveCue(null)}
-        >
+        <div className={`fixed inset-0 flex items-center justify-center z-50 ${
+          activeCue === 'up' ? 'bg-[#14532d]/95' : 'bg-amber-950/95'
+        }`}>
+          <button
+            onClick={() => setActiveCue(null)}
+            className="absolute top-4 right-4 text-white/40 hover:text-white/80 text-2xl leading-none transition-colors"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
           <div className="text-center px-8">
             <div className={`text-5xl font-bold mb-3 ${activeCue === 'up' ? 'text-[#22c55e]' : 'text-amber-400'}`}>
               {activeCue === 'up' ? "You're up!" : 'Heads up!'}
             </div>
-            <div className="text-sm text-[#71717a]">Tap to dismiss</div>
+            <div className="text-xs text-white/30 tracking-wide">esc to dismiss</div>
           </div>
         </div>
       )}
@@ -249,7 +202,6 @@ export default function SpeakerPage(): React.ReactElement {
           </div>
         </div>
       )}
-
       {!presenterConnected && connected && (
         <div className="flex items-center justify-center px-6 py-2">
           <div className="rounded-lg border border-amber-800/50 bg-amber-950/40 px-4 py-2 text-xs text-amber-300 text-center">
@@ -258,7 +210,7 @@ export default function SpeakerPage(): React.ReactElement {
         </div>
       )}
 
-      {/* Slot timer (prominent, shown when active) */}
+      {/* Slot timer */}
       {speakerTimerSync && speakerTimerSync.action !== 'reset' && (
         <div className="px-6 pt-4">
           <TimerDisplay sync={speakerTimerSync} prominent />
@@ -298,6 +250,94 @@ export default function SpeakerPage(): React.ReactElement {
           <p className="text-xs text-[#71717a]">Reconnecting…</p>
         </div>
       )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Entry point — handles session lookup and name input. No WebSocket here.
+// ---------------------------------------------------------------------------
+
+export default function SpeakerPage(): React.ReactElement {
+  const { code } = useParams<{ code: string }>()
+  const sessionCode = (code ?? '').toUpperCase()
+
+  const [sessionState, setSessionState] = useState<SessionState>('loading')
+  const [name, setName] = useState('')
+  const [confirmedName, setConfirmedName] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!sessionCode) { setSessionState('not_found'); return }
+    getSession(sessionCode)
+      .then(res => setSessionState(res.exists ? 'enter_name' : 'not_found'))
+      .catch(() => setSessionState('not_found'))
+  }, [sessionCode])
+
+  useEffect(() => {
+    const saved = localStorage.getItem(NAME_KEY)
+    if (saved) setName(saved)
+  }, [])
+
+  function handleJoin(): void {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    localStorage.setItem(NAME_KEY, trimmed)
+    setConfirmedName(trimmed)
+  }
+
+  // Once confirmed, hand off to SpeakerActive which owns the WebSocket
+  if (confirmedName) {
+    return <SpeakerActive sessionCode={sessionCode} name={confirmedName} />
+  }
+
+  if (sessionState === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={base}>
+        <p className="text-[#71717a] font-mono text-sm">Loading…</p>
+      </div>
+    )
+  }
+
+  if (sessionState === 'not_found') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={base}>
+        <p className="text-2xl font-bold">Session not found</p>
+        <p className="text-[#a1a1aa] text-sm max-w-xs">
+          The session <span className="font-mono text-white">{sessionCode}</span> doesn't exist or has expired.
+        </p>
+        <Link to="/" className="mt-4 text-sm text-[#22c55e] underline underline-offset-4 hover:text-[#16a34a] transition-colors">
+          Go home
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-8" style={base}>
+      <div className="text-center">
+        <p className="font-mono text-xs text-[#52525b] uppercase tracking-widest mb-1">Joining session</p>
+        <p className="font-mono text-2xl font-bold tracking-widest">{sessionCode}</p>
+      </div>
+      <div className="w-full max-w-xs flex flex-col gap-3">
+        <input
+          type="text"
+          placeholder="Your name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleJoin()}
+          autoFocus
+          maxLength={32}
+          className="w-full px-4 py-3 rounded-xl text-lg text-center font-medium bg-[#1a1a1a] border border-[#27272a] text-white placeholder-[#52525b] focus:outline-none focus:border-[#22c55e]"
+        />
+        <button
+          onClick={handleJoin}
+          disabled={!name.trim()}
+          className="w-full py-4 rounded-xl font-bold text-xl text-black disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: '#22c55e' }}
+        >
+          Join
+        </button>
+      </div>
     </div>
   )
 }
