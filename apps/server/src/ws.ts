@@ -1,5 +1,4 @@
 import type { FastifyPluginAsync } from 'fastify'
-import websocketPlugin from '@fastify/websocket'
 import type { WebSocket } from '@fastify/websocket'
 import type { ClientMessage, ServerMessage } from '@nextslide/types'
 import { customAlphabet } from 'nanoid'
@@ -63,8 +62,6 @@ function removeFromSession(socket: WebSocket, state: ConnectionState): void {
 }
 
 const wsPlugin: FastifyPluginAsync = async (fastify) => {
-  await fastify.register(websocketPlugin)
-
   fastify.get('/ws/:code', { websocket: true }, (socket, request) => {
     const { code } = request.params as { code: string }
 

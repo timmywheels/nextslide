@@ -4,6 +4,8 @@ node_modules/
 # build outputs
 dist/
 build/
+test-results/
+playwright-report/
 apps/server/dist/
 
 # TypeScript incremental build info
@@ -30,3 +32,7 @@ pnpm-debug.log*
 Thumbs.db
 
 extension-key.pem
+
+# Swift build cache
+.build/
+.swiftpm/

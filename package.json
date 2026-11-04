@@ -3,16 +3,24 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm --filter '!@nextslide/desktop' --filter '!@nextslide/macos' -r build",
+    "build:desktop": "pnpm --filter @nextslide/macos build",
+    "dev:desktop": "pnpm package:desktop && pnpm start:local",
+    "start:local": "node scripts/run-local.mjs",
+    "package:desktop": "pnpm build:desktop && pnpm --filter @nextslide/macos package",
+    "dev": "pnpm --filter '!@nextslide/desktop' --filter '!@nextslide/macos' -r --parallel dev",
+    "test": "pnpm --filter @nextslide/connection test && pnpm --filter @nextslide/server test && pnpm --filter @nextslide/desktop test",
+    "test:e2e": "playwright test",
     "typecheck": "pnpm -r typecheck",
-    "bundle:extension": "./scripts/bundle-extension.sh"
+    "bundle:extension": "./scripts/bundle-extension.sh",
+    "test:macos": "pnpm --filter @nextslide/macos resources && pnpm --filter @nextslide/macos test"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "typescript": "^5.4.5"
   }
 }

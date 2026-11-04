@@ -9,6 +9,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy workspace manifests first (layer-cache friendly)
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/types/package.json ./packages/types/package.json
+COPY packages/connection/package.json ./packages/connection/package.json
 COPY apps/server/package.json ./apps/server/package.json
 COPY apps/web/package.json ./apps/web/package.json
 
@@ -17,11 +18,13 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source
 COPY packages/types ./packages/types
+COPY packages/connection ./packages/connection
 COPY apps/server ./apps/server
 COPY apps/web ./apps/web
 
 # Build types → web → server
 RUN pnpm --filter @nextslide/types build
+RUN pnpm --filter @nextslide/connection build
 RUN pnpm --filter @nextslide/web build
 RUN pnpm --filter @nextslide/server build
 

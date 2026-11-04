@@ -5,6 +5,8 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import sessionsRoutes from './routes/sessions.js'
 import wsPlugin from './ws.js'
+import websocketPlugin from '@fastify/websocket'
+import desktopRoutes from './desktop.js'
 
 const PORT = Number(process.env['PORT'] ?? 4545)
 const HOST = process.env['HOST'] ?? '0.0.0.0'
@@ -20,7 +22,9 @@ await fastify.register(cors, {
 })
 
 await fastify.register(sessionsRoutes)
+await fastify.register(websocketPlugin, { options: { maxPayload: 16384 } })
 await fastify.register(wsPlugin)
+await fastify.register(desktopRoutes)
 
 fastify.get('/health', async () => ({ status: 'ok' }))
 
@@ -34,7 +38,10 @@ if (existsSync(webDistDir)) {
 }
 
 try {
-  await fastify.listen({ port: PORT, host: HOST })
+  const address = await fastify.listen({ port: PORT, host: HOST })
+  // A local launcher can request PORT=0 and use the actual bound port. Binding
+  // happens once, so there is no race between finding and claiming a free port.
+  process.send?.({ type: 'nextslide-ready', address })
 } catch (err) {
   fastify.log.error(err)
   process.exit(1)

@@ -1,0 +1,38 @@
+{
+  "name": "@nextslide/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "dev": "node scripts/launch.mjs",
+    "start": "node scripts/launch.mjs",
+    "package": "node scripts/package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/static": "^8.3.0",
+    "@fastify/websocket": "^11.2.0",
+    "@nextslide/connection": "workspace:*",
+    "fastify": "^5.8.4",
+    "lucide-react": "^1.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-qr-code": "^2.0.18"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "45.2.2",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.15.6",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}

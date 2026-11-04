@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@nextslide/connection": "workspace:*",
     "@fontsource/dm-serif-display": "^5.2.8",
     "@fontsource/ibm-plex-serif": "^5.2.7",
     "@nextslide/types": "workspace:*",

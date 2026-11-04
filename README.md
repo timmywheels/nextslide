@@ -1,10 +1,25 @@
 # nextslide
 
-> Let your speakers advance your slides — no more "next slide, please."
+> Remote slide controls for presenters.
 
-nextslide is an open source tool that lets co-presenters control a speaker's Google Slides from their phone. No app to install, no Google OAuth, no accounts. Scan a code, tap next.
+Nextslide lets speakers control a host’s presentation. The host runs a macOS menu bar app; speakers join in their browser and need no installation or Nextslide account.
 
-## How it works
+## macOS menu bar app
+
+Paste a Google Slides link into the menu bar app to open a dedicated presentation window. No browser extension is needed. Click **Create invite link** and share its public HTTPS link. Speakers can join while the deck is still opening; slide controls wait until it is ready. Speakers join in their browser from any network. **Allow** gives one speaker control and automatically pauses everyone else.
+
+Nextslide opens a separate Chrome presentation window and keeps control on that deck while the host uses other windows and apps. Sign into Google there when needed; its separate local profile remembers the login. The menu bar app automatically starts a local service and public Cloudflare tunnel; commands use WebRTC when possible and authenticated WebSockets as a fallback. Keynote and PowerPoint remain foreground keyboard-control alternatives. An acknowledgment confirms dispatch, not that a slide finished rendering.
+
+```bash
+pnpm install
+brew install cloudflared # build dependency; bundled in the app
+pnpm package:desktop  # macOS only; builds a local Nextslide.app
+pnpm start:local      # session startup opens its public tunnel automatically
+```
+
+The native SwiftUI/AppKit app bundle is generated in `apps/macos/build/Nextslide.app`. This local build uses temporary Cloudflare Quick Tunnels. Google Chrome must be installed; no extension or browser developer settings are required. Installation, production limitations, networking, packaging, and verification are covered in [the menu bar app README](apps/macos/README.md).
+
+## Legacy extension workflow
 
 The presenter installs a Chrome extension. When they start a session, the extension generates a 6-character code and connects to a relay server. Speakers visit the session URL on their phones, enter the code, and get a single **Next** / **Prev** button. Tapping it sends a command through the relay to the extension, which dispatches a keypress to the active Google Slides presentation.
 
@@ -14,7 +29,7 @@ Phone → WebSocket → Relay server → WebSocket → Chrome extension → Goog
 
 The relay is a pure message forwarder. It holds no user data, no slide content, and no persistent state — sessions live in memory and expire after 4 hours of inactivity. When the presenter disconnects, the session is gone.
 
-## Self-hosting
+## Self-hosting the legacy workflow
 
 ### Option A — Railway (one click)
 
@@ -87,7 +102,7 @@ To submit to the Chrome Web Store, zip the `dist/` folder and upload it in the [
 
 ## Why stateless?
 
-Most "remote clicker" tools require OAuth, an account, or a third-party integration. nextslide stores nothing. The relay server is a switchboard — it connects a presenter to their audience and gets out of the way. You can audit exactly what it does in `apps/server/src/ws.ts` in about 150 lines.
+Most "remote clicker" tools require OAuth, an account, or a third-party integration. The legacy relay keeps session state only in memory. The relay server is a switchboard — it connects a presenter to their audience and gets out of the way. You can audit exactly what it does in `apps/server/src/ws.ts` in about 150 lines.
 
 This also makes self-hosting trivial. There is no database to provision, no credentials to rotate, and no data residency concern. Run it on a $5 VPS or inside a corporate network where phones and laptops share the same WiFi.
 

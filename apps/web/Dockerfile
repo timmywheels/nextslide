@@ -7,17 +7,20 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/types/package.json ./packages/types/package.json
+COPY packages/connection/package.json ./packages/connection/package.json
 COPY apps/web/package.json ./apps/web/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY packages/types ./packages/types
+COPY packages/connection ./packages/connection
 COPY apps/web ./apps/web
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN pnpm --filter @nextslide/types build
+RUN pnpm --filter @nextslide/connection build
 RUN pnpm --filter @nextslide/web build
 
 # ---- Runtime stage ----
