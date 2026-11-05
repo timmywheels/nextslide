@@ -8,12 +8,14 @@
     "dev:desktop": "pnpm package:desktop && pnpm start:local",
     "start:local": "node scripts/run-local.mjs",
     "package:desktop": "pnpm build:desktop && pnpm --filter @nextslide/macos package",
+    "release:desktop": "pnpm build:desktop && pnpm --filter @nextslide/macos package:release",
     "dev": "pnpm --filter '!@nextslide/desktop' --filter '!@nextslide/macos' -r --parallel dev",
     "test": "pnpm --filter @nextslide/connection test && pnpm --filter @nextslide/server test && pnpm --filter @nextslide/desktop test",
     "test:e2e": "playwright test",
     "typecheck": "pnpm -r typecheck",
     "bundle:extension": "./scripts/bundle-extension.sh",
-    "test:macos": "pnpm --filter @nextslide/macos resources && pnpm --filter @nextslide/macos test"
+    "test:macos": "pnpm --filter @nextslide/macos resources && pnpm --filter @nextslide/macos test",
+    "deploy:web": "pnpm --filter @nextslide/web deploy:cf"
   },
   "workspaces": [
     "apps/*",

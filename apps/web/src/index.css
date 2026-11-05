@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import "@fontsource/ibm-plex-serif/300-italic.css";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
 
 html, body {
   background-color: oklch(0.768 0.233 130.85);
@@ -22,7 +23,7 @@ html, body {
 }
 
 @theme inline {
-  --font-serif: 'IBM Plex Serif', Georgia, serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

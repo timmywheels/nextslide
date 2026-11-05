@@ -6,20 +6,43 @@ Nextslide lets speakers control a host’s presentation. The host runs a macOS m
 
 ## macOS menu bar app
 
+**Download:** grab `Nextslide-<version>.zip` from the [latest release](https://github.com/timmywheels/nextslide/releases/latest), unzip, and drag `Nextslide.app` to Applications. The app is signed with an Apple Developer ID and notarized, so it opens without Gatekeeper warnings on macOS 14 or later. Google Chrome must be installed.
+
 Paste a Google Slides link into the menu bar app to open a dedicated presentation window. No browser extension is needed. Click **Create invite link** and share its public HTTPS link. Speakers can join while the deck is still opening; slide controls wait until it is ready. Speakers join in their browser from any network. **Allow** gives one speaker control and automatically pauses everyone else.
 
 Nextslide opens a separate Chrome presentation window and keeps control on that deck while the host uses other windows and apps. Sign into Google there when needed; its separate local profile remembers the login. The menu bar app automatically starts a local service and public Cloudflare tunnel; commands use WebRTC when possible and authenticated WebSockets as a fallback. Keynote and PowerPoint remain foreground keyboard-control alternatives. An acknowledgment confirms dispatch, not that a slide finished rendering.
 
+### Build from source
+
 ```bash
 pnpm install
 brew install cloudflared # build dependency; bundled in the app
-pnpm package:desktop  # macOS only; builds a local Nextslide.app
+pnpm package:desktop  # macOS only; local development signature
 pnpm start:local      # session startup opens its public tunnel automatically
 ```
 
-The native SwiftUI/AppKit app bundle is generated in `apps/macos/build/Nextslide.app`. This local build uses temporary Cloudflare Quick Tunnels. Google Chrome must be installed; no extension or browser developer settings are required. Installation, production limitations, networking, packaging, and verification are covered in [the menu bar app README](apps/macos/README.md).
+The native SwiftUI/AppKit app bundle is generated in `apps/macos/build/Nextslide.app`. `pnpm package:desktop` signs with a persistent local development certificate; `pnpm release:desktop` signs with your Developer ID Application certificate, enables the hardened runtime, notarizes, and writes a distributable zip. Installation, networking, packaging, signing, and verification are covered in [the menu bar app README](apps/macos/README.md).
+
+## Marketing site
+
+`apps/web` is the public site at [nextslide.app](https://nextslide.app) and the browser remote speakers open. It is a static Vite build deployed to Cloudflare Workers as static assets (see `apps/web/wrangler.jsonc`).
+
+```bash
+pnpm deploy:web   # builds apps/web and runs wrangler deploy
+```
+
+The Worker is pinned to the owning Cloudflare account in `wrangler.jsonc`, so `wrangler login` must be authorized by that account. To keep a second Cloudflare login separate, point wrangler at its own config directory for both login and deploy:
+
+```bash
+XDG_CONFIG_HOME=~/.config/nextslide-wrangler pnpm --filter @nextslide/web exec wrangler login
+XDG_CONFIG_HOME=~/.config/nextslide-wrangler pnpm deploy:web
+```
+
+The Worker serves `nextslide.app` and `www.nextslide.app` as custom domains (DNS records are managed by the Worker) plus `nextslide.timwheeler.workers.dev`. It serves only static files; the legacy relay below is a separate service.
 
 ## Legacy extension workflow
+
+The original Nextslide was a Chrome extension plus a relay server. It still works and is kept for self-hosters, but the menu bar app above is the recommended path.
 
 The presenter installs a Chrome extension. When they start a session, the extension generates a 6-character code and connects to a relay server. Speakers visit the session URL on their phones, enter the code, and get a single **Next** / **Prev** button. Tapping it sends a command through the relay to the extension, which dispatches a keypress to the active Google Slides presentation.
 
@@ -94,9 +117,10 @@ To submit to the Chrome Web Store, zip the `dist/` folder and upload it in the [
 
 | Layer | Tech |
 |-------|------|
-| Relay server | Fastify + `@fastify/websocket` |
-| Web app | React + Tailwind + ShadCN |
-| Extension | Chrome MV3 (service worker + content script) |
+| macOS app | SwiftUI + AppKit, SwiftNIO, bundled cloudflared |
+| Web app | React + Tailwind + ShadCN, deployed to Cloudflare Workers |
+| Relay server (legacy) | Fastify + `@fastify/websocket` |
+| Extension (legacy) | Chrome MV3 (service worker + content script) |
 | Shared types | TypeScript package (`@nextslide/types`) |
 | Monorepo | pnpm workspaces |
 

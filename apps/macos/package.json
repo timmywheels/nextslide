@@ -8,7 +8,8 @@
     "resources": "node scripts/resources.mjs",
     "package": "node scripts/package.mjs",
     "test": "swift run NextslideChecks",
-    "typecheck": "tsc --noEmit && swift build --product Nextslide"
+    "typecheck": "tsc --noEmit && swift build --product Nextslide",
+    "package:release": "node scripts/package.mjs --release"
   },
   "dependencies": {
     "@nextslide/connection": "workspace:*"

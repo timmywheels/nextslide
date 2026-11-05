@@ -25,7 +25,28 @@ pnpm package:desktop
 pnpm start:local
 ```
 
-The signed app is written to `apps/macos/build/Nextslide.app`. It includes the Swift executable, browser remote, and cloudflared. It does not contain Electron or Node. Google Chrome must be installed on the host. The persistent local signing identity lives in `~/Library/Application Support/Nextslide/Signing`; preserve it across builds to retain macOS permission identity. This is a local development signature, not a notarized distribution build.
+The app bundle is written to `apps/macos/build/Nextslide.app`. It includes the Swift executable, browser remote, and cloudflared. It does not contain Electron or Node. Google Chrome must be installed on the host.
+
+## Signing and releases
+
+Two signing modes are built into `scripts/package.mjs`:
+
+| Command | Certificate | Hardened runtime | Notarized | Output |
+|---------|-------------|------------------|-----------|--------|
+| `pnpm package:desktop` | Persistent local development certificate | No | No | `build/Nextslide.app` |
+| `pnpm release:desktop` | `Developer ID Application` from your login keychain | Yes | Yes, when a notarytool profile exists | `build/Nextslide.app` + `build/Nextslide-<version>.zip` |
+
+The local development identity lives in `~/Library/Application Support/Nextslide/Signing`; preserve it across builds to retain macOS permission grants. It is not a distribution signature.
+
+Release builds use the first `Developer ID Application` certificate found by `security find-identity`, or the identity named in `NEXTSLIDE_SIGNING_IDENTITY`. The hardened runtime is enabled with no entitlement exceptions: the app spawns Chrome and cloudflared as ordinary subprocesses, uses no JIT, and is not sandboxed. Accessibility and notification access are user grants, not entitlements. Switching from the local certificate to Developer ID changes the app's designated requirement, so macOS asks for those permissions again on the first release build.
+
+Notarization is automatic once credentials are stored in the keychain under the profile name `nextslide` (override with `NEXTSLIDE_NOTARY_PROFILE`). Store them once with an [app-specific password](https://support.apple.com/102654):
+
+```sh
+xcrun notarytool store-credentials nextslide --apple-id <your Apple ID> --team-id <your Team ID>
+```
+
+`pnpm release:desktop` then submits the zip, waits for the verdict, staples the ticket to the bundle, rebuilds the zip, and checks it with `spctl`. Without a profile the build is signed but not notarized, and the script prints the command above. Upload `build/Nextslide-<version>.zip` to a GitHub release; the marketing site's download button points at the latest release.
 
 The previous Electron implementation remains in `apps/desktop` as a reference and a shared protocol test harness. The default desktop commands now build and launch the native app.
 
