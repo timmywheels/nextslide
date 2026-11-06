@@ -21,6 +21,8 @@ import IOKit.pwr_mgt
     @Published var needsAccess = false
     @Published var ending = false
     @Published var connectionState = PublicTunnel.State.idle
+    @Published var updateAvailable = false
+    var onInstallUpdate: () -> Void = {}
     let resources: URL
     private var server: LocalServer?
     private var chrome: ChromePipe?
