@@ -35,6 +35,7 @@ struct HostView: View {
                         .onHover { model.endHovered = $0 }
                 } else { Text("Speakers join in their browser.").foregroundStyle(.secondary) }
                 Spacer()
+                if model.updateAvailable { Button("Install update") { model.onInstallUpdate() }.buttonStyle(.plain).foregroundStyle(accent) }
                 Button { NSApplication.shared.terminate(nil) } label: { Image(systemName: "power") }.buttonStyle(.plain).help("Quit Nextslide").accessibilityLabel("Quit Nextslide")
             }.font(.caption).padding(.horizontal, 24).padding(.vertical, 17)
         }

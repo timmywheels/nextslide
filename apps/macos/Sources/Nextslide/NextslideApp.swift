@@ -19,6 +19,7 @@ import Combine
     private var unreadSpeakers = 0
     private var presentationObservation: AnyCancellable?
     private var terminationSignal: DispatchSourceSignal?
+    private var updates: Updates!
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let existing = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == Bundle.main.bundleIdentifier && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
             existing.activate(from: NSRunningApplication.current, options: []); NSApplication.shared.terminate(nil); return
@@ -31,6 +32,10 @@ import Combine
         model.onSpeakerJoined = { [weak self] name in self?.speakerJoined(name) }
         model.onSessionStarted = { [weak self] in self?.prepareNotifications() }
         model.onSessionEnded = { [weak self] in self?.clearJoinNotifications() }
+        updates = Updates()
+        updates.isPresenting = { [weak self] in self?.model.opened == true }
+        updates.onAvailableChanged = { [weak self] available in self?.model.updateAvailable = available }
+        model.onInstallUpdate = { [weak self] in self?.updates.check() }
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = makeMenuBarIcon()
         item.button?.imageScaling = .scaleNone
@@ -90,6 +95,7 @@ import Combine
         add("Pause all", #selector(pauseFromMenu), enabled: model.activeSpeaker != nil)
         add("End session", #selector(endFromMenu), enabled: (model.hosting || model.busy && model.busyLabel == "Creating invite…") && !model.ending)
         menu.addItem(.separator())
+        if updates.enabled { add(model.updateAvailable ? "Install update…" : "Check for Updates…", #selector(checkForUpdatesFromMenu)) }
         add("Quit Nextslide", #selector(quitFromMenu))
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.minY), in: button)
     }
@@ -98,6 +104,7 @@ import Combine
     @objc private func copyInviteFromMenu() { model.copyInvite() }
     @objc private func pauseFromMenu() { model.pause() }
     @objc private func endFromMenu() { model.end() }
+    @objc private func checkForUpdatesFromMenu() { updates.check() }
     @objc private func quitFromMenu() { NSApplication.shared.terminate(nil) }
     private func show() {
         guard let button = item?.button else { return }
@@ -150,7 +157,11 @@ import Combine
         if terminating || model == nil { return .terminateNow }
         terminating = true
         popover.performClose(nil)
-        Task { await model.shutdown(); sender.reply(toApplicationShouldTerminate: true) }
-        return .terminateLater
+        // .terminateLater spins a nested run loop that cannot drain the main queue, so a terminate call made from a
+        // main-queue block (SIGTERM, Sparkle) would deadlock against the cleanup Task. Only logout, which arrives as an
+        // Apple Event and must not be cancelled, can wait that way; everything else cancels and terminates again after cleanup.
+        let appleEvent = NSAppleEventManager.shared().currentAppleEvent != nil
+        Task { await model.shutdown(); appleEvent ? sender.reply(toApplicationShouldTerminate: true) : sender.terminate(nil) }
+        return appleEvent ? .terminateLater : .terminateCancel
     }
 }
