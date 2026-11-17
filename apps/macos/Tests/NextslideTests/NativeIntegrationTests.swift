@@ -101,6 +101,29 @@ final class NativeIntegrationTests {
             try XCTAssertEqual(kill(cancelledPID, 0), -1, "Cancelling startup must also stop its child.")
         } catch { await tunnel.stop(); throw error }
     }
+    @MainActor func testTunnelRetriesAfterFailedStart() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("nextslide-tunnel-retry-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let executable = folder.appendingPathComponent("fake-cloudflared")
+        let script = """
+        #!/usr/bin/env python3
+        import os, signal, sys
+        marker = os.path.join(os.path.dirname(__file__), 'failed-once')
+        if not os.path.exists(marker):
+            open(marker, 'w').close()
+            sys.exit(1)
+        print('https://retry-test.trycloudflare.com', file=sys.stderr, flush=True)
+        print('Registered tunnel connection', file=sys.stderr, flush=True)
+        while True: signal.pause()
+        """
+        try script.write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        let tunnel = PublicTunnel(checkReachability: { _ in true })
+        let address = try await tunnel.start(service: "http://127.0.0.1:1", executable: executable)
+        await tunnel.stop()
+        try XCTAssertEqual(address, "https://retry-test.trycloudflare.com")
+    }
     @MainActor func checkRealTunnel() async throws {
         let server = LocalServer(resources: resources)
         try await server.start()
@@ -221,10 +244,11 @@ func XCTAssertThrowsError<T>(_ action: @autoclosure () throws -> T) throws { do 
         do {
             if CommandLine.arguments.contains("--tunnel-smoke") { try await tests.checkRealTunnel(); return }
             try await tests.testTunnelSharesStartupAndWaitsForCleanup(); print("PASS: Shared tunnel startup, cancellation, and child-process cleanup")
+            try await tests.testTunnelRetriesAfterFailedStart(); print("PASS: Tunnel retry after a failed start")
             try tests.testOnlyOriginalGoogleDeckLinksAreAccepted(); print("PASS: Google Slides URL validation")
             try await tests.testNativeServerAuthenticatesAndPinsGuestIdentity(); print("PASS: Native server authentication, identity routing, and session teardown")
             try await tests.testNativeEngineControlsOnlySelectedBackgroundDeckAndOneSpeaker(); print("PASS: Native Chrome pipe, background deck control, deduplication, exclusive approval, sign-in and access states")
-            print("4 native integration checks passed.")
+            print("5 native integration checks passed.")
         } catch { fputs("FAIL: \(error.localizedDescription)\n", stderr); exit(1) }
     }
 }

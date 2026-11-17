@@ -42,7 +42,7 @@ import Foundation
         if let origin { return origin }
         if let starting { return try await starting.value }
         let generation = UUID(); self.generation = generation
-        let task = Task { try await self.open(service: service, executable: executable, generation: generation) }
+        let task = Task { try await self.connect(service: service, executable: executable, generation: generation) }
         starting = task
         do {
             let origin = try await task.value
@@ -53,6 +53,45 @@ import Foundation
             if self.generation == generation { await stop() }
             throw error
         }
+    }
+    // Quick Tunnel creation can fail transiently, and a firewall prompt can hold the first attempt.
+    private func connect(service: String, executable: URL, generation: UUID) async throws -> String {
+        var attempt = 1
+        while true {
+            do { return try await open(service: service, executable: executable, generation: generation) }
+            catch is CancellationError { throw CancellationError() }
+            catch {
+                guard self.generation == generation else { throw CancellationError() }
+                recordFailure(attempt: attempt, error: error)
+                guard attempt < 3 else { throw error }
+                await discardAttempt()
+                try await Task.sleep(nanoseconds: UInt64(attempt) * 2_000_000_000)
+                attempt += 1
+            }
+        }
+    }
+    // Local only. Gives a failed first run something to diagnose.
+    private func recordFailure(attempt: Int, error: Error) {
+        let directory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Nextslide")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let entry = "\(ISO8601DateFormatter().string(from: Date())) attempt \(attempt): \(error.localizedDescription)\n\(logs)\n"
+        try? entry.write(to: directory.appendingPathComponent("tunnel.log"), atomically: true, encoding: .utf8)
+    }
+    private func discardAttempt() async {
+        output?.fileHandleForReading.readabilityHandler = nil
+        try? output?.fileHandleForReading.close(); output = nil
+        guard let process = self.process else { return }
+        self.process = nil
+        await Self.terminate(process)
+    }
+    private static func terminate(_ process: Process) async {
+        guard process.isRunning else { return }
+        process.terminate()
+        let deadline = Date().addingTimeInterval(2)
+        while process.isRunning && Date() < deadline { try? await Task.sleep(nanoseconds: 25_000_000) }
+        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+        // Process receives the exit on Foundation's reaper thread.
+        while process.isRunning { try? await Task.sleep(nanoseconds: 25_000_000) }
     }
     private func open(service: String, executable: URL, generation: UUID) async throws -> String {
         try Task.checkCancellation()
@@ -113,15 +152,7 @@ import Foundation
         progress?(.idle)
         guard let process = self.process else { if let stopping { await stopping.value }; return }
         self.process = nil
-        let cleanup = Task {
-            guard process.isRunning else { return }
-            process.terminate()
-            let deadline = Date().addingTimeInterval(2)
-            while process.isRunning && Date() < deadline { try? await Task.sleep(nanoseconds: 25_000_000) }
-            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-            // Process receives the exit on Foundation's reaper thread.
-            while process.isRunning { try? await Task.sleep(nanoseconds: 25_000_000) }
-        }
+        let cleanup = Task { await Self.terminate(process) }
         stopping = cleanup
         await cleanup.value
         stopping = nil

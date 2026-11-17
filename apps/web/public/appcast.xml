@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+<channel>
+<title>Nextslide</title>
+<link>https://nextslide.app/appcast.xml</link>
+<item>
+<title>Nextslide 0.2.1</title>
+<pubDate>Fri, 06 Nov 2026 16:54:01 GMT</pubDate>
+<sparkle:version>0.2.1</sparkle:version>
+<sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<enclosure url="https://github.com/timmywheels/nextslide/releases/download/v0.2.1/Nextslide-0.2.1.zip" type="application/octet-stream" sparkle:edSignature="NTo0+z70LLtDxowHg4Bt0FYTkqg52qC2GaRRDda7tqlm8tK0U4Sz/k8Vu07ynySW7lArbHqhxDSI9edb/JzhAA==" length="47757369"/>
+</item>
+</channel>
+</rss>

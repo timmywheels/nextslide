@@ -6,7 +6,7 @@ Nextslide lets speakers control a host’s presentation. The host runs a macOS m
 
 ## macOS menu bar app
 
-**Download:** grab `Nextslide-<version>.zip` from the [latest release](https://github.com/timmywheels/nextslide/releases/latest), unzip, and drag `Nextslide.app` to Applications. The app is signed with an Apple Developer ID and notarized, so it opens without Gatekeeper warnings on macOS 14 or later. Google Chrome must be installed.
+**Download:** get [`Nextslide.dmg`](https://github.com/timmywheels/nextslide/releases/latest/download/Nextslide.dmg), open it, and drag Nextslide to Applications. The app is signed and notarized by Apple and updates itself with Sparkle. It requires macOS 14 or later and Google Chrome.
 
 Paste a Google Slides link into the menu bar app to open a dedicated presentation window. No browser extension is needed. Click **Create invite link** and share its public HTTPS link. Speakers can join while the deck is still opening; slide controls wait until it is ready. Speakers join in their browser from any network. **Allow** gives one speaker control and automatically pauses everyone else.
 
@@ -117,7 +117,7 @@ To submit to the Chrome Web Store, zip the `dist/` folder and upload it in the [
 
 | Layer | Tech |
 |-------|------|
-| macOS app | SwiftUI + AppKit, SwiftNIO, bundled cloudflared |
+| macOS app | SwiftUI + AppKit, SwiftNIO, bundled cloudflared, Sparkle updates |
 | Web app | React + Tailwind + ShadCN, deployed to Cloudflare Workers |
 | Relay server (legacy) | Fastify + `@fastify/websocket` |
 | Extension (legacy) | Chrome MV3 (service worker + content script) |
