@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // Marketing site + browser remote, served as static assets from Cloudflare Workers.
   // The macOS menu bar app does not need this deployment; speakers connect through the
-  // host's own public tunnel. The legacy relay (apps/server) is not part of this Worker.
+  // host's own public tunnel.
   "name": "nextslide",
   "account_id": "146a81104edf332f53f1db8394501e16",
   "compatibility_date": "2026-11-01",

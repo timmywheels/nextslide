@@ -8,7 +8,7 @@ Nextslide is a SwiftUI and AppKit menu bar app. Speakers use a browser; they do 
 4. Select **Allow** beside a speaker. This automatically pauses everyone else.
 5. Use **Pause all** or **End session** when needed.
 
-Speaker buttons show a 450 ms progress sweep after each press and prevent rapid repeat commands. Commands send immediately. Nextslide requests notification permission when you start a session; new speakers trigger a notification and a menu bar badge while the host panel is closed. Selecting the notification opens the speaker list. Reconnecting speakers do not trigger repeat alerts.
+Speaker buttons respond with a press animation and ignore rapid repeat commands for 450 ms. Commands send immediately. Nextslide requests notification permission when you start a session; new speakers trigger a notification and a menu bar badge while the host panel is closed. Selecting the notification opens the speaker list. Reconnecting speakers do not trigger repeat alerts.
 
 Right-click (or Control-click) the menu bar icon for quick access to the presentation, invite link, speaker controls, and Quit.
 
@@ -68,8 +68,6 @@ Updates are verified against `SUPublicEDKey` in `scripts/package.mjs`. The priva
 
 Keep that file in a password manager, not in this repository.
 
-The previous Electron implementation remains in `apps/desktop` as a reference and a shared protocol test harness. The default desktop commands now build and launch the native app.
-
 ## Connection and control
 
 - SwiftNIO listens on an automatically allocated loopback port. Hosts do not choose or forward ports.
@@ -92,6 +90,6 @@ pnpm test
 pnpm test:e2e
 ```
 
-Native integration checks use a temporary, isolated headless Chrome profile and a fixture matching the current Google viewer structure. They cover session authentication, guest identity routing, invite invalidation, background control, duplicate suppression, exclusive speaker approval, sign-in/access states, and the actual browser remote sending a direct WebRTC command through the native bridge. TypeScript and Playwright checks cover the shared connection protocol, fallback, reconnect, and browser remote.
+Native integration checks use a temporary, isolated headless Chrome profile and a fixture matching the current Google viewer structure. They cover session authentication, guest identity routing, invite invalidation, background control, duplicate suppression, exclusive speaker approval, sign-in/access states, and the actual browser remote sending a direct WebRTC command through the native bridge. `pnpm test` covers the shared command gate. `pnpm test:e2e` checks that slide control reaches only the targeted presentation.
 
 The native checks are a small executable (`NextslideChecks`) so they run with Apple’s command-line tools without requiring XCTest from full Xcode. It is not included in the app bundle.

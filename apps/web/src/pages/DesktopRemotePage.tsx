@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { SlideButton } from '../components/SlideButton'
 import { DesktopRemote, type RemoteSnapshot } from '../lib/desktop-remote'
 import './desktop-remote.css'
 
@@ -17,7 +17,6 @@ export default function DesktopRemotePage() {
   })
   const [name, setName] = useState('')
   const [joined, setJoined] = useState(false)
-  const [lastDirection, setLastDirection] = useState<'next' | 'prev'>('next')
   const [state, setState] = useState<RemoteSnapshot>({ connected: false, ready: false, enabled: false, pending: false, message: 'Connecting…', error: '', latency: null })
   const remote = useRef<DesktopRemote | null>(null)
   useEffect(() => {
@@ -38,8 +37,8 @@ export default function DesktopRemotePage() {
         </form> : <>
           <div className="remote-welcome"><div className="remote-eyebrow">{name}</div><h1>{state.ready ? 'Slide controls' : !state.connected ? 'Connecting…' : !state.enabled ? 'Waiting for the host' : 'Waiting for the presentation'}</h1><p aria-live="polite">{state.message}</p></div>
           <div className="remote-controls">
-            <button className={`remote-next ${state.pending && lastDirection === 'next' ? 'is-sending' : ''}`} aria-busy={state.pending && lastDirection === 'next'} disabled={!state.ready || state.pending} onClick={() => { setLastDirection('next'); remote.current?.click('next') }}><span className="remote-progress" aria-hidden="true" /><ArrowRight size={54} strokeWidth={1.5} /><span>Next slide</span></button>
-            <button className={`remote-prev ${state.pending && lastDirection === 'prev' ? 'is-sending' : ''}`} aria-busy={state.pending && lastDirection === 'prev'} disabled={!state.ready || state.pending} onClick={() => { setLastDirection('prev'); remote.current?.click('prev') }}><span className="remote-progress" aria-hidden="true" /><ArrowLeft size={18} /><span>Previous slide</span></button>
+            <SlideButton direction="next" label="Next slide" className="remote-next" iconSize={54} strokeWidth={1.5} disabled={!state.ready} busy={state.pending} onPress={() => remote.current?.click('next')} />
+            <SlideButton direction="prev" label="Previous slide" className="remote-prev" iconSize={18} disabled={!state.ready} busy={state.pending} onPress={() => remote.current?.click('prev')} />
           </div>
           {state.error ? <p className="remote-error" role="alert">{state.error}</p> : <p className="remote-reassurance">Only one speaker can control slides at a time.</p>}
           <button className="remote-leave" onClick={() => { remote.current?.close(); setJoined(false) }}>Leave session</button>

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { presentationFrame } from '../apps/desktop/src/presentation-control'
+import { presentationFrame } from '../apps/macos/engine/presentation-control'
 
 test('a targeted slideshow receives one click while another tab is active; stale clicks never replay', async ({ page, context }) => {
   await page.route('https://docs.google.com/presentation/d/fixture/present', route => route.fulfill({ contentType: 'text/html', body: '<div class="punch-viewer-content" style="width:800px;height:500px">Slide <span id="slide">1</span></div>' }))

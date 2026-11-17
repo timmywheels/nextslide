@@ -9,45 +9,69 @@ export default function PrivacyPage(): React.ReactElement {
       <main className="m-main">
         <article className="m-legal">
         <h1>Privacy Policy</h1>
-        <p className="m-legal-date">Effective April 1, 2026</p>
+        <p className="m-legal-date">Effective November 6, 2026</p>
 
           <p className="m-legal-lead">
-            nextslide does not collect, store, or share personal data.
+            Nextslide has no accounts, no analytics, and no servers that store session data. Sessions
+            do rely on a few third-party services, listed below.
           </p>
 
           <section>
-            <h2>What passes through the relay server</h2>
+            <h2>What speakers share</h2>
             <p>
-              When a speaker joins a session, the name they enter is transmitted in real time through
-              the relay server to display in the presenter's panel. Names are held in memory only for
-              the duration of the session and are permanently deleted when the presenter disconnects
-              or the session expires (within 4 hours of inactivity). No names or session data are
-              written to disk or any database.
+              A speaker enters a name to join. The name passes through Cloudflare to the host's Mac so
+              the host can see who is waiting. The app keeps it in memory for the session and does not
+              save it to a file. If the host allows notifications, macOS may also show the name in
+              Notification Center. Sessions end when the host ends them or after four hours.
+            </p>
+            <p>
+              The speaker's browser keeps the invite and a temporary session token until the tab is
+              closed, so the speaker can reconnect.
             </p>
           </section>
 
           <section>
-            <h2>What the browser extension accesses</h2>
+            <h2>What stays on the host's Mac</h2>
             <p>
-              The extension detects whether the active browser tab is a Google Slides presentation
-              and dispatches keyboard events to advance slides when a command is received from a
-              speaker. No browsing history, tab content, or keystroke data is recorded or
-              transmitted anywhere.
+              The app saves the most recent presentation link and a separate Chrome profile, which
+              keeps the Google sign-in. If a connection fails, it writes technical details, including
+              the temporary connection address, to a log file on the Mac. None of this is sent to
+              Nextslide.
+            </p>
+            <p>
+              The app opens and controls presentations on the Mac. It does not upload slides to
+              Nextslide.
             </p>
           </section>
 
           <section>
-            <h2>Local storage</h2>
+            <h2>Third-party services</h2>
+            <p>These services receive network information, such as IP addresses, when they are used:</p>
+            <ul>
+              <li>
+                <strong>Cloudflare</strong> carries speaker connections, including names, through a
+                temporary public tunnel. Slide commands also use the tunnel when a direct connection
+                is not available. Cloudflare hosts this website and the update feed too.
+              </li>
+              <li>
+                <strong>Google</strong> provides Google Slides and a connection service that helps
+                speakers and hosts find a direct route. Signing in to Google is between you and Google.
+              </li>
+              <li>
+                <strong>GitHub</strong> hosts app downloads and updates.
+              </li>
+            </ul>
             <p>
-              The extension stores your preferred relay server URL and UI theme in your browser's
-              local storage. This data never leaves your device.
+              Direct connections also reveal the host's and speaker's IP addresses to each other. Each
+              service handles this data under its own privacy policy. Nextslide does not sell data.
             </p>
           </section>
 
           <section>
-            <h2>Third parties</h2>
+            <h2>Updates</h2>
             <p>
-              No data is sold, shared, or sent to any third party.
+              The app checks for new versions about once a day. The check sends the app version, but
+              no personal information or system profile.
             </p>
           </section>
 

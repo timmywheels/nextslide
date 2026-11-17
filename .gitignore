@@ -6,7 +6,6 @@ dist/
 build/
 test-results/
 playwright-report/
-apps/server/dist/
 
 # TypeScript incremental build info
 *.tsbuildinfo

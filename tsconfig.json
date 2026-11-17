@@ -13,10 +13,7 @@
     "noEmit": true
   },
   "references": [
-    { "path": "./packages/types" },
-    { "path": "./apps/server" },
-    { "path": "./apps/web" },
-    { "path": "./apps/extension" }
+    { "path": "./apps/web" }
   ],
   "files": []
 }

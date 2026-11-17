@@ -1,5 +1,5 @@
-import { HostSession } from '../../desktop/src/host-session'
-import type { NativeStatus } from '../../desktop/src/types'
+import { HostSession } from './host-session'
+import type { NativeStatus } from './types'
 
 declare global { interface Window { nextslideNative(value: string): void; nextslideHost: typeof bridge } }
 let host: HostSession | undefined
