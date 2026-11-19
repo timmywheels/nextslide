@@ -11,8 +11,5 @@
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "references": [
-    { "path": "../../packages/types" }
-  ],
   "include": ["src", "vite.config.ts"]
 }

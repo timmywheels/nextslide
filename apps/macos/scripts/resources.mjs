@@ -14,7 +14,7 @@ await rm('build/resources/remote', { recursive: true, force: true })
 await cp('../web/dist', 'build/resources/remote', { recursive: true })
 await copyFile('engine/index.html', 'build/resources/engine/index.html')
 await build({ entryPoints: ['engine/host.ts'], bundle: true, platform: 'browser', format: 'iife', target: 'chrome120', outfile: 'build/resources/engine/host.js', minify: true })
-await build({ entryPoints: ['../desktop/src/presentation-control.ts'], bundle: true, platform: 'browser', format: 'iife', globalName: 'NextslidePresentation', target: 'chrome120', outfile: 'build/resources/presentation.js', minify: true })
+await build({ entryPoints: ['engine/presentation-control.ts'], bundle: true, platform: 'browser', format: 'iife', globalName: 'NextslidePresentation', target: 'chrome120', outfile: 'build/resources/presentation.js', minify: true })
 let cloudflared
 try { cloudflared = execFileSync('/usr/bin/which', ['cloudflared'], { encoding: 'utf8' }).trim() }
 catch { throw new Error('Install the build dependency with brew install cloudflared, then rebuild.') }

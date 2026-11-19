@@ -4,12 +4,12 @@
 <title>Nextslide</title>
 <link>https://nextslide.app/appcast.xml</link>
 <item>
-<title>Nextslide 0.2.1</title>
-<pubDate>Fri, 06 Nov 2026 16:54:01 GMT</pubDate>
-<sparkle:version>0.2.1</sparkle:version>
-<sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+<title>Nextslide 0.2.2</title>
+<pubDate>Tue, 17 Nov 2026 23:47:59 GMT</pubDate>
+<sparkle:version>0.2.2</sparkle:version>
+<sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-<enclosure url="https://github.com/timmywheels/nextslide/releases/download/v0.2.1/Nextslide-0.2.1.zip" type="application/octet-stream" sparkle:edSignature="NTo0+z70LLtDxowHg4Bt0FYTkqg52qC2GaRRDda7tqlm8tK0U4Sz/k8Vu07ynySW7lArbHqhxDSI9edb/JzhAA==" length="47757369"/>
+<enclosure url="https://github.com/timmywheels/nextslide/releases/download/v0.2.2/Nextslide-0.2.2.zip" type="application/octet-stream" sparkle:edSignature="pmGKcEgigwB+3Ka80bPZPp5udWmGYOL7iaeYT2vJztCtu8+yooMlGOTb+joC1kdhNnZ+n/Lesk1wSO2+mm52Dw==" length="47738039"/>
 </item>
 </channel>
 </rss>

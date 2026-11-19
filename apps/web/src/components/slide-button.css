@@ -1,0 +1,23 @@
+/* Fixed-length, transform-only motion: it starts on press and never waits on the network, so it cannot stall or snap. */
+.slide-button { --bloom: #ffffff; position: relative; overflow: hidden; isolation: isolate; transition: transform 460ms cubic-bezier(.34, 1.56, .64, 1); }
+.slide-button:active:not(:disabled) { transform: scale(.965); transition: transform 90ms ease-out; }
+.slide-button-prev { --bloom: #496e52; }
+.slide-button > :not(.slide-ripple) { position: relative; z-index: 1; }
+.slide-icon { display: inline-flex; overflow: hidden; padding: 2px; }
+.slide-button-next { --travel: 130%; }
+.slide-button-prev { --travel: -130%; }
+.slide-icon .is-traveling { animation: slide-arrow-travel 520ms cubic-bezier(.22, 1, .36, 1) both; }
+.slide-ripple { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--bloom) 30%, transparent) 0%, color-mix(in srgb, var(--bloom) 20%, transparent) 72%, color-mix(in srgb, var(--bloom) 56%, transparent) 92%, transparent 100%); animation: slide-ripple-bloom 820ms cubic-bezier(.22, .8, .3, 1) both; }
+@keyframes slide-ripple-bloom { from { transform: scale(.04); opacity: 1; } 55% { opacity: .75; } to { transform: scale(1); opacity: 0; } }
+@keyframes slide-arrow-travel {
+  0% { transform: translateX(0); opacity: 1; }
+  38% { transform: translateX(var(--travel)); opacity: 0; }
+  39% { transform: translateX(calc(var(--travel) * -1)); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-button, .slide-button:active:not(:disabled) { transform: none; transition: none; }
+  .slide-icon .is-traveling { animation: none; }
+  .slide-ripple { background: color-mix(in srgb, var(--bloom) 14%, transparent); border-radius: 0; animation: slide-ripple-fade 260ms ease-out both; }
+  @keyframes slide-ripple-fade { from { opacity: 1; } to { opacity: 0; } }
+}

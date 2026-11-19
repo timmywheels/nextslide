@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { SlideButton } from '../components/SlideButton'
 import './marketing.css'
 
 const REPO = 'https://github.com/timmywheels/nextslide'
@@ -18,7 +19,7 @@ const questions = [
   { q: 'Which presentation tools work?', a: 'Google Slides runs in its own window and keeps working while you use other apps. Keynote and PowerPoint work while the slideshow stays in front.' },
   { q: 'Is a session secure?', a: 'Each session has its own secret invite link. Ending the session invalidates that link, and sessions expire after four hours.' },
   { q: 'Who decides which speaker is active?', a: 'The host does. Allow one speaker, pause everyone, or end the session at any time from the menu bar.' },
-  { q: 'Is it open source?', a: 'Yes. The Mac app, the speaker remote, and the original Chrome extension are MIT licensed and live in one repository.' },
+  { q: 'Is it open source?', a: 'Yes. The Mac app and the speaker remote are MIT licensed and live in one repository.' },
 ]
 
 export function MarketingHeader(): React.ReactElement {
@@ -45,17 +46,54 @@ export function MarketingFooter(): React.ReactElement {
   )
 }
 
-function RemotePreview(): React.ReactElement {
+const deck = [
+  { title: 'Quarterly review', body: 'Three speakers, one deck' },
+  { title: 'Product', body: 'Shipped on time' },
+  { title: 'Growth', bars: [38, 56, 72, 94] },
+  { title: 'Thanks', body: 'Questions?' },
+]
+
+function DemoSlide({ index, className, onAnimationEnd }: { index: number; className: string; onAnimationEnd?: () => void }): React.ReactElement {
+  const { title, body, bars } = deck[index]
   return (
-    <div className="m-phone" aria-hidden="true">
-      <div className="m-phone-bar">
-        <span><img src="/icons/nextslide.svg" alt="" width="18" height="18" />Nextslide</span>
-        <small><i />Ready</small>
+    <div className={`m-slide ${className}`} onAnimationEnd={onAnimationEnd}>
+      <strong>{title}</strong>
+      {body && <span>{body}</span>}
+      {bars && <div className="m-slide-bars">{bars.map(height => <i key={height} style={{ height: `${height}%` }} />)}</div>}
+    </div>
+  )
+}
+
+/** Plays the real speaker button against a small sample deck. It sends nothing. */
+function RemotePreview(): React.ReactElement {
+  const [slide, setSlide] = useState(0)
+  const [turn, setTurn] = useState<{ id: number; from: number; direction: 'next' | 'prev' } | null>(null)
+  const [pressed, setPressed] = useState(false)
+
+  function go(direction: 'next' | 'prev') {
+    setPressed(true)
+    setTurn(current => ({ id: (current?.id ?? 0) + 1, from: slide, direction }))
+    setSlide((slide + (direction === 'next' ? 1 : deck.length - 1)) % deck.length)
+  }
+
+  return (
+    <div className={`m-demo ${pressed ? '' : 'is-waiting'}`}>
+      <div className="m-screen" role="status" aria-label={`Sample slide ${slide + 1} of ${deck.length}: ${deck[slide].title}`}>
+        {turn && <DemoSlide key={`out-${turn.id}`} index={turn.from} className={`is-leaving-${turn.direction}`} onAnimationEnd={() => setTurn(null)} />}
+        <DemoSlide key={`in-${turn?.id ?? slide}`} index={slide} className={turn ? `is-entering-${turn.direction}` : ''} />
+        <div className="m-screen-dots" aria-hidden="true">{deck.map(({ title }, index) => <i key={title} className={index === slide ? 'is-current' : ''} />)}</div>
       </div>
-      <p className="m-phone-name">Priya</p>
-      <p className="m-phone-title">Slide controls</p>
-      <div className="m-phone-next"><ArrowRight size={46} strokeWidth={1.5} />Next slide</div>
-      <div className="m-phone-prev"><ArrowLeft size={16} />Previous slide</div>
+      <div className="m-phone">
+        <div className="m-phone-bar">
+          <span><img src="/icons/nextslide.svg" alt="" width="18" height="18" />Nextslide</span>
+          <small><i />Ready</small>
+        </div>
+        <p className="m-phone-name">Priya</p>
+        <p className="m-phone-title">Slide controls</p>
+        <SlideButton direction="next" label="Next slide" className="m-phone-next" iconSize={46} strokeWidth={1.5} onPress={() => go('next')} />
+        <SlideButton direction="prev" label="Previous slide" className="m-phone-prev" iconSize={16} onPress={() => go('prev')} />
+      </div>
+      <p className="m-demo-hint">Try it. This is what speakers get.</p>
     </div>
   )
 }
@@ -97,8 +135,7 @@ export default function LandingPage(): React.ReactElement {
 
         <section className="m-section m-closing">
           <h2>Nothing to host</h2>
-          <p>The Mac app opens its own public tunnel for each session, so there is no server to run. The original Chrome extension and relay remain in the repository for self-hosting.</p>
-          <a className="m-link" href={`${REPO}#legacy-extension-workflow`}>Read the self-hosting guide</a>
+          <p>The Mac app opens its own public tunnel for each session, so there is no server to run.</p>
         </section>
       </main>
       <MarketingFooter />

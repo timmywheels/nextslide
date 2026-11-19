@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { localSigningIdentity } from '../../desktop/scripts/local-signing.mjs'
+import { localSigningIdentity } from './local-signing.mjs'
 process.chdir(resolve(dirname(fileURLToPath(import.meta.url)), '..'))
 const bundle = resolve('build/Nextslide.app')
 const version = JSON.parse(await readFile('package.json', 'utf8')).version
